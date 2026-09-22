@@ -1,1 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEMAN · Gestão de Viaturas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg:#10141A; --bg-elev:#161C24; --surface:#1D2530; --surface-2:#252E3B;
+    --border:#303A47; --text:#E7ECF2; --text-dim:#93A0B0; --text-faint:#5C6879;
+    --amber:#E8A93A;
+    --verde:#3DDC84; --azul:#00abfb; --vermelho:#EF5350; --roxo:#B18CFF;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 18px 60px;}
 
+  header{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;
+    padding:20px 22px;background:linear-gradient(135deg,var(--bg-elev),var(--surface));
+    border:1px solid var(--border);border-radius:14px;margin-bottom:18px;position:relative;overflow:hidden;}
+  header::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--amber);}
+  .htitle{display:flex;flex-direction:column;gap:2px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--amber);text-transform:uppercase;}
+  h1{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:26px;margin:0;letter-spacing:.01em;}
+  .user-area{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-dim);}
+  .user-area .who{font-family:'IBM Plex Mono',monospace;}
+  .user-area .who b{color:var(--amber);}
+
+  /* LOGIN */
+  .login-overlay{position:fixed;inset:0;background:rgba(16,20,26,.97);display:flex;align-items:center;justify-content:center;z-index:9999;}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px 24px;width:340px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  .login-box h2{font-family:'Rajdhani',sans-serif;font-size:22px;margin:0 0 4px;}
+  .login-box p.sub{font-size:12px;color:var(--text-dim);margin:0 0 8px;}
+  .login-box input{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-size:14px;}
+  .login-box input:focus{outline:1px solid var(--amber);}
+  .login-box .btn{width:100%;justify-content:center;padding:11px;font-size:15px;}
+  .login-error{color:var(--vermelho);font-size:12px;text-align:center;display:none;}
+  .login-footer{font-size:10.5px;color:var(--text-faint);text-align:center;margin-top:6px;}
+
+  /* STATUS INDICATOR */
+  .update-indicator{font-size:11px;color:var(--text-faint);text-align:right;margin-bottom:14px;}
+
+  /* CARDS DE RESUMO */
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+  .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;transition:border-color .15s;}
+  .summary-card:hover{border-color:var(--amber);}
+  .summary-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;}
+  .summary-card.total::before{background:var(--amber);}
+  .summary-card.gbm::before{background:var(--azul);}
+  .summary-card .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'IBM Plex Mono',monospace;}
+  .summary-card .value{font-family:'Rajdhani',sans-serif;font-size:36px;font-weight:700;line-height:1;}
+  .summary-card.total .value{color:var(--amber);}
+  .summary-card.gbm .value{color:var(--azul);}
+
+  /* FILTROS */
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;overflow-x:auto;}
+  .tab{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;padding:8px 16px;border-radius:7px;cursor:pointer;color:var(--text-dim);border:none;background:transparent;white-space:nowrap;}
+  .tab.active{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--border);}
+  .right-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  input[type=text], input[type=password], select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0;}
+  input:focus, select:focus{outline:1px solid var(--amber);}
+  .btn{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;padding:9px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);white-space:nowrap;}
+  .btn:hover{border-color:var(--amber);}
+  .btn.primary{background:var(--amber);color:#1a1204;border-color:var(--amber);}
+  .btn.ghost{background:transparent;}
+
+  /* GRID DE VIATURAS */
+  .veh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+  .veh-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--azul);border-radius:11px;padding:14px 16px;transition:transform .15s, box-shadow .15s;}
+  .veh-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3);}
+  .veh-card.reserva{border-left-color:var(--roxo);opacity:.85;}
+  .veh-card.baixada{border-left-color:var(--vermelho);}
+  .veh-prefix{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:20px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .veh-gbm{font-size:12px;color:var(--text-dim);margin-bottom:8px;}
+  .veh-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .veh-actions .btn{font-size:12px;padding:6px 10px;}
+
+  /* BADGES */
+  .badge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;border-radius:12px;border:1px solid var(--border);white-space:nowrap;}
+  .badge.ativa{background:rgba(0,171,251,.15);color:var(--azul);border-color:var(--azul);}
+  .badge.reserva{background:rgba(177,140,255,.15);color:var(--roxo);border-color:var(--roxo);}
+  .badge.baixada{background:rgba(239,83,80,.15);color:var(--vermelho);border-color:var(--vermelho);}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(16,20,26,.85);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;}
+  .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:90vh;overflow-y:auto;}
+  .modal-box h2{font-family:'Rajdhani',sans-serif;font-size:20px;margin:0;color:var(--amber);}
+  .modal-grid{display:grid;grid-template-columns:1fr;gap:10px;}
+  .modal-grid label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
+  .modal-grid input, .modal-grid select{width:100%;}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+  .empty{text-align:center;color:var(--text-faint);padding:40px 20px;font-size:14px;}
+
+  footer{text-align:center;color:var(--text-faint);font-size:11px;margin-top:40px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-box">
+    <h2>DEMAN · Acesso</h2>
+    <p class="sub">Entre com suas credenciais para continuar.</p>
+    <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password">
+    <p id="loginError" class="login-error">Usuário ou senha inválidos.</p>
+    <button class="btn primary" id="loginBtn">Entrar</button>
+    <div class="login-footer">Uso interno · Gestão de Viaturas</div>
+  </div>
+</div>
+
+<!-- MODAL DE AÇÃO -->
+<div id="actionModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2 id="modalTitle">Ação</h2>
+    <div class="modal-grid" id="modalFields"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="modalCancel">Cancelar</button>
+      <button class="btn primary" id="modalConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header>
+    <div class="htitle">
+      <div class="eyebrow">DEMAN · Gestão de Viaturas</div>
+      <h1>Painel de Viaturas</h1>
+    </div>
+    <div class="user-area">
+      <span class="who">Logado como <b id="currentUserName">—</b></span>
+      <button class="btn ghost" id="logoutBtn">Sair</button>
+    </div>
+  </header>
+
+  <div class="update-indicator" id="updateStatus">Carregando dados...</div>
+
+  <!-- CARDS DE RESUMO -->
+  <div class="summary" id="summaryCards"></div>
+
+  <!-- FILTROS E AÇÕES -->
+  <div class="toolbar">
+    <div class="tabs" id="tabsContainer"></div>
+    <div class="right-tools">
+      <input type="text" id="search" placeholder="Buscar prefixo ou GBM">
+      <button class="btn" id="addBtn">+ Nova Viatura</button>
+    </div>
+  </div>
+
+  <!-- GRID -->
+  <div class="veh-grid" id="vehGrid"></div>
+
+  <footer>Dados carregados da planilha Google Sheets.</footer>
+</div>
+
+<script>
+// ==============================================
+// CONFIGURAÇÃO
+// ==============================================
+// ⚠️ SUBSTITUA pelas URLs CSV das suas abas
+const CSV_ATIVAS  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXAV5eDKqWexNRKAYI5DO7PlSpp3SCZjd7wh8US0vXBj_BUHzZn-2qJWm20Ni5aYYebkzpRLK3AfQj/pub?output=csv';
+// Para "reservas", você precisa publicar a aba separadamente e colar a URL aqui:
+const CSV_RESERVAS = ''; // ← cole a URL da aba "reservas" quando tiver
+
+const APPS_SCRIPT_URL = ''; // ← cole a URL do Web App depois de criar o Apps Script
+
+const USERS = {
+  'bita':   { senha: 'Bamex@2026', nome: 'BITA' },
+  'adson':  { senha: 'Bamex@2026', nome: 'ADSON FRANCA' },
+  'paulo':  { senha: 'Bamex@2026', nome: 'PAULO SOTERO' },
+  'luana':  { senha: 'Bamex@2026', nome: 'LUANA VICTORIA' },
+  'alvaro': { senha: 'Bamex@2026', nome: 'FABIO ALVARO' },
+};
+
+// ==============================================
+// ESTADO
+// ==============================================
+let VIATURAS = [];       // { prefixo, gbm, status: 'ativa'|'reserva'|'baixada', origem: 'ativa'|'reserva' }
+let currentUser = null;
+let activeTab = 'todas';
+
+// ==============================================
+// AUTENTICAÇÃO
+// ==============================================
+function isLoggedIn(){ return sessionStorage.getItem('deman_auth') === 'ok'; }
+function getCurrentUser(){ return sessionStorage.getItem('deman_user_nome') || ''; }
+
+function showLogin(){ document.getElementById('loginOverlay').style.display = 'flex'; document.getElementById('loginUser').focus(); }
+function hideLogin(){ document.getElementById('loginOverlay').style.display = 'none'; }
+
+async function handleLogin(){
+  const u = document.getElementById('loginUser').value.trim().toLowerCase();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  const acc = USERS[u];
+  if (acc && acc.senha === p) {
+    sessionStorage.setItem('deman_auth','ok');
+    sessionStorage.setItem('deman_user_nome', acc.nome);
+    currentUser = acc.nome;
+    err.style.display = 'none';
+    startApp();
+  } else {
+    err.style.display = 'block';
+  }
+}
+function handleLogout(){
+  sessionStorage.removeItem('deman_auth');
+  sessionStorage.removeItem('deman_user_nome');
+  location.reload();
+}
+document.getElementById('loginBtn').addEventListener('click', handleLogin);
+document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') handleLogin(); });
+document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+
+// ==============================================
+// UTILITÁRIOS
+// ==============================================
+function normalizeStr(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+// ==============================================
+// CARREGAMENTO DE DADOS
+// ==============================================
+async function fetchCsv(url){
+  const r = await fetch(url + (url.includes('?')?'&':'?') + 'ts=' + Date.now());
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return await r.text();
+}
+
+async function loadData(){
+  try {
+    const ativasCsv = await fetchCsv(CSV_ATIVAS);
+    const ativas = Papa.parse(ativasCsv, { header: true, skipEmptyLines: true }).data;
+
+    // Mapeia ativas: espera colunas "Prefixo" e "GBM"
+    const lista = ativas.map(row => {
+      const prefixo = (row['Prefixo'] || row['prefixo'] || row['PREFIXO'] || '').toString().trim().toUpperCase();
+      const gbm = (row['GBM'] || row['gbm'] || '').toString().trim().toUpperCase();
+      if(!prefixo) return null;
+      return { prefixo, gbm, status: 'ativa', origem: 'ativa' };
+    }).filter(Boolean);
+
+    // TODO: carregar reservas quando CSV_RESERVAS estiver configurada
+    // if(CSV_RESERVAS){
+    //   const resCsv = await fetchCsv(CSV_RESERVAS);
+    //   const res = Papa.parse(resCsv, { header: true, skipEmptyLines: true }).data;
+    //   res.forEach(row => {
+    //     const prefixo = (row['Prefixo']||row['prefixo']||'').toString().trim().toUpperCase();
+    //     if(prefixo) lista.push({ prefixo, gbm: '', status: 'reserva', origem: 'reserva' });
+    //   });
+    // }
+
+    VIATURAS = lista;
+    document.getElementById('updateStatus').textContent = 'Atualizado em ' + new Date().toLocaleTimeString('pt-BR');
+    render();
+  } catch(err){
+    console.error(err);
+    document.getElementById('updateStatus').textContent = 'Falha ao carregar dados';
+  }
+}
+
+// ==============================================
+// RENDERIZAÇÃO
+// ==============================================
+function renderSummary(){
+  const total = VIATURAS.length;
+  const porGbm = {};
+  VIATURAS.forEach(v => {
+    if(!v.gbm) return;
+    porGbm[v.gbm] = (porGbm[v.gbm] || 0) + 1;
+  });
+
+  let html = `<div class="summary-card total">
+    <div class="label">Total geral</div>
+    <div class="value">${total}</div>
+  </div>`;
+
+  Object.keys(porGbm).sort().forEach(gbm => {
+    html += `<div class="summary-card gbm">
+      <div class="label">${escapeHtml(gbm)}</div>
+      <div class="value">${porGbm[gbm]}</div>
+    </div>`;
+  });
+
+  document.getElementById('summaryCards').innerHTML = html;
+}
+
+function renderTabs(){
+  const gbms = [...new Set(VIATURAS.map(v => v.gbm).filter(Boolean))].sort();
+  const container = document.getElementById('tabsContainer');
+  let html = `<button class="tab ${activeTab==='todas'?'active':''}" data-tab="todas">Todas</button>`;
+  html += `<button class="tab ${activeTab==='ativas'?'active':''}" data-tab="ativas">Ativas</button>`;
+  html += `<button class="tab ${activeTab==='reservas'?'active':''}" data-tab="reservas">Reservas</button>`;
+  gbms.forEach(g => {
+    html += `<button class="tab ${activeTab===g?'active':''}" data-tab="${escapeHtml(g)}">${escapeHtml(g)}</button>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => { activeTab = t.dataset.tab; render(); });
+  });
+}
+
+function renderGrid(){
+  const q = normalizeStr(document.getElementById('search').value);
+  let lista = VIATURAS;
+
+  if(activeTab === 'ativas') lista = lista.filter(v => v.origem === 'ativa');
+  else if(activeTab === 'reservas') lista = lista.filter(v => v.origem === 'reserva');
+  else if(activeTab !== 'todas') lista = lista.filter(v => v.gbm === activeTab);
+
+  if(q) lista = lista.filter(v => normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q));
+
+  if(lista.length === 0){
+    document.getElementById('vehGrid').innerHTML = '<div class="empty">Nenhuma viatura encontrada.</div>';
+    return;
+  }
+
+  const html = lista.map(v => `
+    <div class="veh-card ${v.origem==='reserva'?'reserva':''}">
+      <div class="veh-prefix">
+        ${escapeHtml(v.prefixo)}
+        <span class="badge ${v.origem==='reserva'?'reserva':'ativa'}">${v.origem==='reserva'?'Reserva':'Ativa'}</span>
+      </div>
+      <div class="veh-gbm">${escapeHtml(v.gbm || 'Sem GBM')}</div>
+      <div class="veh-actions">
+        <button class="btn ghost" data-action="mudar" data-prefixo="${escapeHtml(v.prefixo)}">Mudar GBM</button>
+        <button class="btn ghost" data-action="baixar" data-prefixo="${escapeHtml(v.prefixo)}">Baixar</button>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('vehGrid').innerHTML = html;
+
+  // Listeners dos botões de ação
+  document.querySelectorAll('[data-action="mudar"]').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalMudarGbm(btn.dataset.prefixo));
+  });
+  document.querySelectorAll('[data-action="baixar"]').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalBaixar(btn.dataset.prefixo));
+  });
+}
+
+function render(){
+  renderSummary();
+  renderTabs();
+  renderGrid();
+}
+
+document.getElementById('search').addEventListener('input', render);
+
+// ==============================================
+// MODAL DE AÇÃO
+// ==============================================
+function abrirModal(titulo, camposHtml, onConfirm){
+  document.getElementById('modalTitle').textContent = titulo;
+  document.getElementById('modalFields').innerHTML = camposHtml;
+  const modal = document.getElementById('actionModal');
+  modal.style.display = 'flex';
+
+  const confirm = document.getElementById('modalConfirm');
+  const cancel = document.getElementById('modalCancel');
+
+  const fechar = () => { modal.style.display = 'none'; confirm.removeEventListener('click', handler); cancel.removeEventListener('click', fechar); };
+
+  const handler = async () => {
+    const ok = await onConfirm();
+    if(ok) fechar();
+  };
+
+  confirm.addEventListener('click', handler);
+  cancel.addEventListener('click', fechar);
+}
+
+function abrirModalMudarGbm(prefixo){
+  const v = VIATURAS.find(x => x.prefixo === prefixo);
+  if(!v) return;
+  abrirModal('Mudar GBM · ' + prefixo, `
+    <label>Novo GBM
+      <input type="text" id="modalGbm" value="${escapeHtml(v.gbm)}" placeholder="Ex: 1º GBM">
+    </label>
+  `, async () => {
+    const novoGbm = document.getElementById('modalGbm').value.trim().toUpperCase();
+    if(!novoGbm){ alert('Informe o GBM.'); return false; }
+    // TODO: chamar Apps Script para gravar
+    v.gbm = novoGbm;
+    render();
+    return true;
+  });
+}
+
+function abrirModalBaixar(prefixo){
+  const v = VIATURAS.find(x => x.prefixo === prefixo);
+  if(!v) return;
+  abrirModal('Baixar Viatura · ' + prefixo, `
+    <p style="font-size:13px;color:var(--text-dim);margin:0;">Confirma o baixamento da viatura <b>${escapeHtml(prefixo)}</b> (${escapeHtml(v.gbm)})?</p>
+    <label>Motivo
+      <input type="text" id="modalMotivo" placeholder="Ex: manutenção, sinistro...">
+    </label>
+  `, async () => {
+    const motivo = document.getElementById('modalMotivo').value.trim();
+    if(!motivo){ alert('Informe o motivo.'); return false; }
+    // TODO: chamar Apps Script para gravar
+    VIATURAS = VIATURAS.filter(x => x.prefixo !== prefixo);
+    render();
+    return true;
+  });
+}
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  abrirModal('Nova Viatura', `
+    <label>Prefixo
+      <input type="text" id="newPrefixo" placeholder="Ex: ABT-05">
+    </label>
+    <label>GBM
+      <input type="text" id="newGbm" placeholder="Ex: 1º GBM">
+    </label>
+  `, async () => {
+    const prefixo = document.getElementById('newPrefixo').value.trim().toUpperCase();
+    const gbm = document.getElementById('newGbm').value.trim().toUpperCase();
+    if(!prefixo){ alert('Informe o prefixo.'); return false; }
+    // TODO: chamar Apps Script para gravar
+    VIATURAS.push({ prefixo, gbm, status:'ativa', origem:'ativa' });
+    render();
+    return true;
+  });
+});
+
+// ==============================================
+// INICIALIZAÇÃO
+// ==============================================
+function startApp(){
+  hideLogin();
+  currentUser = getCurrentUser();
+  document.getElementById('currentUserName').textContent = currentUser || '—';
+  loadData();
+}
+
+if (isLoggedIn()) startApp();
+else showLogin();
+</script>
+</body>
+</html>
