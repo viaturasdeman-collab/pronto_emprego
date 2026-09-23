@@ -28,18 +28,19 @@
   .update-indicator{font-size:11px;color:var(--text-faint);text-align:right;margin-bottom:14px;}
 
   .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
-  .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;transition:border-color .15s;cursor:pointer;}
-  .summary-card:hover{border-color:var(--amber);}
+  .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;transition:border-color .15s;cursor:default;}
   .summary-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;}
   .summary-card.total::before{background:var(--amber);}
   .summary-card.ativas::before{background:var(--azul);}
   .summary-card.reservas::before{background:var(--roxo);}
+  .summary-card.baixadas::before{background:var(--vermelho);}
   .summary-card.gbm::before{background:var(--verde);}
   .summary-card .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'IBM Plex Mono',monospace;}
   .summary-card .value{font-family:'Rajdhani',sans-serif;font-size:34px;font-weight:700;line-height:1;}
   .summary-card.total .value{color:var(--amber);}
   .summary-card.ativas .value{color:var(--azul);}
   .summary-card.reservas .value{color:var(--roxo);}
+  .summary-card.baixadas .value{color:var(--vermelho);}
   .summary-card.gbm .value{color:var(--verde);}
 
   .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;}
@@ -59,21 +60,26 @@
   .veh-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--azul);border-radius:11px;padding:14px 16px;transition:transform .15s, box-shadow .15s;}
   .veh-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3);}
   .veh-card.reserva{border-left-color:var(--roxo);}
+  .veh-card.baixada{border-left-color:var(--vermelho);opacity:.92;}
   .veh-prefix{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:20px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
-  .veh-gbm{font-size:12px;color:var(--text-dim);margin-bottom:10px;font-family:'IBM Plex Mono',monospace;}
+  .veh-gbm{font-size:12px;color:var(--text-dim);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;}
+  .veh-motivo{font-size:11px;color:var(--text-dim);margin-bottom:4px;}
+  .veh-data{font-size:10px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;}
   .veh-actions{display:flex;gap:6px;flex-wrap:wrap;}
   .veh-actions .btn{font-size:12px;padding:6px 10px;}
 
   .badge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;border-radius:12px;border:1px solid var(--border);white-space:nowrap;}
   .badge.ativa{background:rgba(0,171,251,.15);color:var(--azul);border-color:var(--azul);}
   .badge.reserva{background:rgba(177,140,255,.15);color:var(--roxo);border-color:var(--roxo);}
+  .badge.baixada{background:rgba(239,83,80,.15);color:var(--vermelho);border-color:var(--vermelho);}
 
   .modal-overlay{position:fixed;inset:0;background:rgba(16,20,26,.85);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;}
   .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:90vh;overflow-y:auto;}
   .modal-box h2{font-family:'Rajdhani',sans-serif;font-size:20px;margin:0;color:var(--amber);}
   .modal-grid{display:grid;grid-template-columns:1fr;gap:10px;}
   .modal-grid label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
-  .modal-grid input, .modal-grid select{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 11px;font-size:13px;}
+  .modal-grid input, .modal-grid select{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 11px;font-size:13px;font-family:'Inter',sans-serif;}
+  .modal-grid input:focus, .modal-grid select:focus{outline:1px solid var(--amber);}
   .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
 
   .empty{text-align:center;color:var(--text-faint);padding:40px 20px;font-size:14px;grid-column:1/-1;}
@@ -120,15 +126,27 @@
 </div>
 
 <script>
+// ==============================================
+// CONFIGURAÇÃO
+// ==============================================
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTBLYK1DGYKjndJZYt2mm03aLiuwyamzc4s2dDsYY_YJpj3fh0CaptQGG1hMReJhqG/exec';
 const USUARIO_ATUAL = 'Operador';
 
+// ==============================================
+// ESTADO
+// ==============================================
 let VIATURAS = [];
 let activeTab = 'todas';
 
+// ==============================================
+// UTILITÁRIOS
+// ==============================================
 function normalizeStr(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
+// ==============================================
+// API
+// ==============================================
 async function apiCall(action, payload){
   try{
     const r = await fetch(APPS_SCRIPT_URL, {
@@ -144,6 +162,9 @@ async function apiCall(action, payload){
   }
 }
 
+// ==============================================
+// CARREGAMENTO
+// ==============================================
 async function loadData(){
   try{
     const r = await apiCall('listarViaturas');
@@ -164,11 +185,15 @@ async function loadData(){
   }
 }
 
+// ==============================================
+// RENDERIZAÇÃO
+// ==============================================
 function renderSummary(){
   try{
     const total = VIATURAS.length;
     const ativas = VIATURAS.filter(v => v.origem === 'ativa').length;
     const reservas = VIATURAS.filter(v => v.origem === 'reserva').length;
+    const baixadas = VIATURAS.filter(v => v.origem === 'baixada').length;
 
     const porGbm = {};
     VIATURAS.filter(v => v.origem === 'ativa' && v.gbm).forEach(v => {
@@ -176,44 +201,39 @@ function renderSummary(){
     });
 
     let html = `
-      <div class="summary-card total" data-tab="todas">
+      <div class="summary-card total">
         <div class="label">Total geral</div>
         <div class="value">${total}</div>
       </div>
-      <div class="summary-card ativas" data-tab="ativas">
+      <div class="summary-card ativas">
         <div class="label">Ativas</div>
         <div class="value">${ativas}</div>
       </div>
-      <div class="summary-card reservas" data-tab="reservas">
+      <div class="summary-card reservas">
         <div class="label">Reservas</div>
         <div class="value">${reservas}</div>
+      </div>
+      <div class="summary-card baixadas">
+        <div class="label">Baixadas</div>
+        <div class="value">${baixadas}</div>
       </div>`;
 
     Object.keys(porGbm).sort().forEach(gbm => {
-      html += `<div class="summary-card gbm" data-tab="${escapeHtml(gbm)}">
+      html += `<div class="summary-card gbm">
         <div class="label">${escapeHtml(gbm)}</div>
         <div class="value">${porGbm[gbm]}</div>
       </div>`;
     });
 
-    const cont = document.getElementById('summaryCards');
-    cont.innerHTML = html;
-    cont.querySelectorAll('.summary-card').forEach(c => {
-      c.addEventListener('click', () => { activeTab = c.dataset.tab; render(); });
-    });
+    document.getElementById('summaryCards').innerHTML = html;
   }catch(e){ console.error('renderSummary:', e); }
 }
 
 function renderTabs(){
   try{
-    const gbms = [...new Set(VIATURAS.filter(v => v.gbm).map(v => v.gbm))].sort();
     const container = document.getElementById('tabsContainer');
     let html = `<button class="tab ${activeTab==='todas'?'active':''}" data-tab="todas">Todas</button>`;
-    html += `<button class="tab ${activeTab==='ativas'?'active':''}" data-tab="ativas">Ativas</button>`;
-    html += `<button class="tab ${activeTab==='reservas'?'active':''}" data-tab="reservas">Reservas</button>`;
-    gbms.forEach(g => {
-      html += `<button class="tab ${activeTab===g?'active':''}" data-tab="${escapeHtml(g)}">${escapeHtml(g)}</button>`;
-    });
+    html += `<button class="tab ${activeTab==='baixadas'?'active':''}" data-tab="baixadas">Baixadas</button>`;
     container.innerHTML = html;
     container.querySelectorAll('.tab').forEach(t => {
       t.addEventListener('click', () => { activeTab = t.dataset.tab; render(); });
@@ -226,9 +246,11 @@ function renderGrid(){
     const q = normalizeStr(document.getElementById('search').value);
     let lista = VIATURAS;
 
-    if(activeTab === 'ativas') lista = lista.filter(v => v.origem === 'ativa');
-    else if(activeTab === 'reservas') lista = lista.filter(v => v.origem === 'reserva');
-    else if(activeTab !== 'todas') lista = lista.filter(v => v.gbm === activeTab);
+    if(activeTab === 'baixadas'){
+      lista = lista.filter(v => v.origem === 'baixada');
+    } else {
+      lista = lista.filter(v => v.origem !== 'baixada');
+    }
 
     if(q) lista = lista.filter(v => normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q));
 
@@ -237,25 +259,44 @@ function renderGrid(){
       return;
     }
 
-    const html = lista.map(v => `
-      <div class="veh-card ${v.origem==='reserva'?'reserva':''}">
-        <div class="veh-prefix">
-          ${escapeHtml(v.prefixo)}
-          <span class="badge ${v.origem==='reserva'?'reserva':'ativa'}">${v.origem==='reserva'?'Reserva':'Ativa'}</span>
-        </div>
-        <div class="veh-gbm">${escapeHtml(v.gbm || 'Sem GBM')}</div>
-        <div class="veh-actions">
-          ${v.origem === 'ativa' ? `<button class="btn ghost" data-action="mudar" data-prefixo="${escapeHtml(v.prefixo)}">Mudar GBM</button>` : ''}
-          <button class="btn ghost" data-action="permutar" data-prefixo="${escapeHtml(v.prefixo)}" data-origem="${v.origem}" data-gbm="${escapeHtml(v.gbm||'')}">
-            ${v.origem==='ativa'?'→ Reserva':'→ Ativa'}
-          </button>
-          <button class="btn ghost danger" data-action="baixar" data-prefixo="${escapeHtml(v.prefixo)}" data-gbm="${escapeHtml(v.gbm||'')}" data-origem="${v.origem}">Baixar</button>
-        </div>
-      </div>
-    `).join('');
+    const html = lista.map(v => {
+      if(v.origem === 'baixada'){
+        return `
+          <div class="veh-card baixada">
+            <div class="veh-prefix">
+              ${escapeHtml(v.prefixo)}
+              <span class="badge baixada">Baixada</span>
+            </div>
+            <div class="veh-gbm">${v.gbm ? 'Era ' + escapeHtml(v.gbm) : 'Sem GBM'}</div>
+            ${v.motivo ? `<div class="veh-motivo">Motivo: ${escapeHtml(v.motivo)}</div>` : ''}
+            ${v.data ? `<div class="veh-data">${escapeHtml(v.data)}</div>` : ''}
+            <div class="veh-actions">
+              <button class="btn ghost" data-action="reativar" data-prefixo="${escapeHtml(v.prefixo)}">Reativar</button>
+              <button class="btn ghost" data-action="moverReserva" data-prefixo="${escapeHtml(v.prefixo)}">→ Reserva</button>
+            </div>
+          </div>`;
+      }
+
+      return `
+        <div class="veh-card ${v.origem==='reserva'?'reserva':''}">
+          <div class="veh-prefix">
+            ${escapeHtml(v.prefixo)}
+            <span class="badge ${v.origem==='reserva'?'reserva':'ativa'}">${v.origem==='reserva'?'Reserva':'Ativa'}</span>
+          </div>
+          <div class="veh-gbm">${escapeHtml(v.gbm || 'Sem GBM')}</div>
+          <div class="veh-actions">
+            ${v.origem === 'ativa' ? `<button class="btn ghost" data-action="mudar" data-prefixo="${escapeHtml(v.prefixo)}">Mudar GBM</button>` : ''}
+            <button class="btn ghost" data-action="permutar" data-prefixo="${escapeHtml(v.prefixo)}" data-origem="${v.origem}" data-gbm="${escapeHtml(v.gbm||'')}">
+              ${v.origem==='ativa'?'→ Reserva':'→ Ativa'}
+            </button>
+            <button class="btn ghost danger" data-action="baixar" data-prefixo="${escapeHtml(v.prefixo)}" data-gbm="${escapeHtml(v.gbm||'')}" data-origem="${v.origem}">Baixar</button>
+          </div>
+        </div>`;
+    }).join('');
 
     document.getElementById('vehGrid').innerHTML = html;
 
+    // Listeners
     document.querySelectorAll('[data-action="mudar"]').forEach(btn => {
       btn.addEventListener('click', () => abrirModalMudarGbm(btn.dataset.prefixo));
     });
@@ -264,6 +305,12 @@ function renderGrid(){
     });
     document.querySelectorAll('[data-action="baixar"]').forEach(btn => {
       btn.addEventListener('click', () => abrirModalBaixar(btn.dataset.prefixo, btn.dataset.gbm, btn.dataset.origem));
+    });
+    document.querySelectorAll('[data-action="reativar"]').forEach(btn => {
+      btn.addEventListener('click', () => abrirModalReativar(btn.dataset.prefixo));
+    });
+    document.querySelectorAll('[data-action="moverReserva"]').forEach(btn => {
+      btn.addEventListener('click', () => abrirModalMoverReserva(btn.dataset.prefixo));
     });
   }catch(e){ console.error('renderGrid:', e); }
 }
@@ -276,6 +323,9 @@ function render(){
 
 document.getElementById('search').addEventListener('input', render);
 
+// ==============================================
+// MODAL GENÉRICO
+// ==============================================
 function abrirModal(titulo, camposHtml, onConfirm){
   document.getElementById('modalTitle').textContent = titulo;
   document.getElementById('modalFields').innerHTML = camposHtml;
@@ -301,7 +351,7 @@ function abrirModal(titulo, camposHtml, onConfirm){
 }
 
 function htmlOpcoesSubstituta(prefixoExcluido){
-  const outras = VIATURAS.filter(v => v.prefixo !== prefixoExcluido);
+  const outras = VIATURAS.filter(v => v.prefixo !== prefixoExcluido && v.origem !== 'baixada');
   if(outras.length === 0) return `<option value="">— Nenhuma outra viatura disponível —</option>`;
   let html = `<option value="">— Nenhuma (deixar vaga) —</option>`;
   const reservas = outras.filter(v => v.origem === 'reserva');
@@ -319,15 +369,27 @@ function htmlOpcoesSubstituta(prefixoExcluido){
   return html;
 }
 
+function htmlDatalistGbms(){
+  const gbms = [...new Set(VIATURAS.filter(v => v.gbm && v.origem === 'ativa').map(v => v.gbm))].sort();
+  let html = `<datalist id="listaGbms">`;
+  gbms.forEach(g => html += `<option value="${escapeHtml(g)}">`);
+  html += `</datalist>`;
+  return html;
+}
+
+// ==============================================
+// MUDAR GBM
+// ==============================================
 function abrirModalMudarGbm(prefixo){
   const v = VIATURAS.find(x => x.prefixo === prefixo);
   if(!v) return;
   abrirModal('Mudar GBM · ' + prefixo, `
+    ${htmlDatalistGbms()}
     <label>GBM atual
       <input type="text" value="${escapeHtml(v.gbm)}" disabled style="opacity:.6;">
     </label>
     <label>Novo GBM
-      <input type="text" id="modalGbm" placeholder="Ex: 1º GBM" autofocus>
+      <input type="text" id="modalGbm" list="listaGbms" placeholder="Ex: 1º GBM" autofocus>
     </label>
   `, async () => {
     const novoGbm = document.getElementById('modalGbm').value.trim().toUpperCase();
@@ -339,6 +401,9 @@ function abrirModalMudarGbm(prefixo){
   });
 }
 
+// ==============================================
+// PERMUTAR
+// ==============================================
 function abrirModalPermutar(prefixo, origem, gbm){
   const destino = origem === 'ativa' ? 'reserva' : 'ativa';
   const titulo = origem === 'ativa' ? `Mover ${prefixo} para Reserva` : `Mover ${prefixo} para Ativa`;
@@ -363,6 +428,9 @@ function abrirModalPermutar(prefixo, origem, gbm){
   });
 }
 
+// ==============================================
+// BAIXAR
+// ==============================================
 function abrirModalBaixar(prefixo, gbm, origem){
   let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
     Confirma o baixamento de <b>${escapeHtml(prefixo)}</b>${gbm ? ` (${escapeHtml(gbm)})` : ''}?
@@ -389,13 +457,61 @@ function abrirModalBaixar(prefixo, gbm, origem){
   });
 }
 
+// ==============================================
+// REATIVAR BAIXADA
+// ==============================================
+function abrirModalReativar(prefixo){
+  const v = VIATURAS.find(x => x.prefixo === prefixo);
+  if(!v) return;
+
+  abrirModal('Reativar viatura · ' + prefixo, `
+    ${htmlDatalistGbms()}
+    <p style="font-size:13px;color:var(--text-dim);margin:0;">
+      <b>${escapeHtml(prefixo)}</b> voltará ao serviço ativo.
+    </p>
+    ${v.gbm ? `<label>GBM original
+      <input type="text" value="${escapeHtml(v.gbm)}" disabled style="opacity:.6;">
+    </label>` : ''}
+    <label>Novo GBM (pode ser qualquer um)
+      <input type="text" id="modalGbm" list="listaGbms" value="${escapeHtml(v.gbm||'')}" placeholder="Ex: 1º GBM" autofocus>
+    </label>
+  `, async () => {
+    const gbm = document.getElementById('modalGbm').value.trim().toUpperCase();
+    if(!gbm){ alert('Informe o GBM.'); return false; }
+    const r = await apiCall('reativarViatura', { prefixo, gbm });
+    if(!r.ok){ alert('Erro: ' + r.error); return false; }
+    await loadData();
+    return true;
+  });
+}
+
+// ==============================================
+// MOVER BAIXADA PARA RESERVA
+// ==============================================
+function abrirModalMoverReserva(prefixo){
+  abrirModal('Mover para Reserva · ' + prefixo, `
+    <p style="font-size:13px;color:var(--text-dim);margin:0;">
+      <b>${escapeHtml(prefixo)}</b> será movida de <b>baixadas</b> para <b>reservas</b>.
+    </p>
+  `, async () => {
+    const r = await apiCall('moverBaixadaParaReserva', { prefixo });
+    if(!r.ok){ alert('Erro: ' + r.error); return false; }
+    await loadData();
+    return true;
+  });
+}
+
+// ==============================================
+// ADICIONAR
+// ==============================================
 document.getElementById('addBtn').addEventListener('click', () => {
   abrirModal('Nova Viatura', `
+    ${htmlDatalistGbms()}
     <label>Prefixo
       <input type="text" id="newPrefixo" placeholder="Ex: ABT-05" autofocus>
     </label>
     <label>GBM
-      <input type="text" id="newGbm" placeholder="Ex: 1º GBM">
+      <input type="text" id="newGbm" list="listaGbms" placeholder="Ex: 1º GBM">
     </label>
   `, async () => {
     const prefixo = document.getElementById('newPrefixo').value.trim();
@@ -408,6 +524,9 @@ document.getElementById('addBtn').addEventListener('click', () => {
   });
 });
 
+// ==============================================
+// INICIALIZAÇÃO
+// ==============================================
 loadData();
 setInterval(loadData, 180000);
 </script>
