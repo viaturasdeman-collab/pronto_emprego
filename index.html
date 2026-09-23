@@ -127,9 +127,6 @@
 </div>
 
 <script>
-// ==============================================
-// CONFIGURAÇÃO
-// ==============================================
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTBLYK1DGYKjndJZYt2mm03aLiuwyamzc4s2dDsYY_YJpj3fh0CaptQGG1hMReJhqG/exec';
 const USUARIO_ATUAL = 'Operador';
 
@@ -137,16 +134,10 @@ let VIATURAS = [];
 let LOCAIS = [];
 let activeTab = 'todas';
 
-// ==============================================
-// UTILITÁRIOS
-// ==============================================
 function normalizeStr(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
 
-// ==============================================
-// API
-// ==============================================
 async function apiCall(action, payload){
   try{
     const r = await fetch(APPS_SCRIPT_URL, {
@@ -162,9 +153,6 @@ async function apiCall(action, payload){
   }
 }
 
-// ==============================================
-// CARREGAMENTO
-// ==============================================
 async function loadData(){
   try{
     const r = await apiCall('listarViaturas');
@@ -186,9 +174,6 @@ async function loadData(){
   }
 }
 
-// ==============================================
-// RENDERIZAÇÃO
-// ==============================================
 function renderSummary(){
   try{
     const total = VIATURAS.length;
@@ -323,9 +308,6 @@ function render(){
 
 document.getElementById('search').addEventListener('input', render);
 
-// ==============================================
-// MODAL GENÉRICO
-// ==============================================
 function abrirModal(titulo, camposHtml, onConfirm){
   document.getElementById('modalTitle').textContent = titulo;
   document.getElementById('modalFields').innerHTML = camposHtml;
@@ -378,9 +360,6 @@ function htmlOpcoesSubstituta(prefixoExcluido){
   return html;
 }
 
-// ==============================================
-// MUDAR LOCAL
-// ==============================================
 function abrirModalMudarLocal(prefixo){
   const v = VIATURAS.find(x => x.prefixo === prefixo);
   if(!v) return;
@@ -405,11 +384,7 @@ function abrirModalMudarLocal(prefixo){
   });
 }
 
-// ==============================================
-// PERMUTAR (ativa ↔ reserva) — ✅ CORRIGIDO
-// ==============================================
 function abrirModalPermutar(prefixo, origem, gbm){
-  // ✅ CORRIGIDO — envia no plural para o backend
   const destinoAPI = origem === 'ativa' ? 'reservas' : 'ativas';
   const destinoLabel = origem === 'ativa' ? 'DEMAN (Reserva)' : 'Ativa';
   const titulo = origem === 'ativa' ? `Mover ${prefixo} para Reserva (DEMAN)` : `Mover ${prefixo} para Ativa`;
@@ -427,17 +402,14 @@ function abrirModalPermutar(prefixo, origem, gbm){
   abrirModal(titulo, corpo, async () => {
     const sub = document.getElementById('modalSubstituto');
     const substituto = sub ? sub.value : '';
-    // ✅ Manda destinoAPI ('reservas' ou 'ativas')
     const r = await apiCall('permutarViatura', { prefixo, destino: destinoAPI, substituto });
     if(!r.ok){ alert('Erro: ' + r.error); return false; }
+    if(r.aviso){ /* silencioso, só atualiza */ }
     await loadData();
     return true;
   });
 }
 
-// ==============================================
-// BAIXAR
-// ==============================================
 function abrirModalBaixar(prefixo, gbm, origem){
   let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
     Confirma o baixamento de <b>${escapeHtml(prefixo)}</b>${gbm ? ` (${escapeHtml(gbm)})` : ''}?
@@ -464,9 +436,6 @@ function abrirModalBaixar(prefixo, gbm, origem){
   });
 }
 
-// ==============================================
-// REATIVAR BAIXADA
-// ==============================================
 function abrirModalReativar(prefixo){
   const v = VIATURAS.find(x => x.prefixo === prefixo);
   if(!v) return;
@@ -491,9 +460,6 @@ function abrirModalReativar(prefixo){
   });
 }
 
-// ==============================================
-// MOVER BAIXADA PARA RESERVA
-// ==============================================
 function abrirModalMoverReserva(prefixo){
   abrirModal('Mover para Reserva · ' + prefixo, `
     <p style="font-size:13px;color:var(--text-dim);margin:0;">
@@ -507,9 +473,6 @@ function abrirModalMoverReserva(prefixo){
   });
 }
 
-// ==============================================
-// ADICIONAR
-// ==============================================
 document.getElementById('addBtn').addEventListener('click', () => {
   abrirModal('Nova Viatura', `
     <label>Prefixo
@@ -530,9 +493,6 @@ document.getElementById('addBtn').addEventListener('click', () => {
   });
 });
 
-// ==============================================
-// INICIALIZAÇÃO
-// ==============================================
 loadData();
 setInterval(loadData, 180000);
 </script>
