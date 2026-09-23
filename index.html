@@ -2,161 +2,152 @@
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTBLYK1DGYKjndJZYt2mm03aLiuwyamzc4s2dDsYY_YJpj3fh0CaptQGG1hMReJhqG/exec';
 const USUARIO_ATUAL = 'Operador';
 
-  
 let VIATURAS = [];
 let activeTab = 'todas';
 
 function normalizeStr(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
-function normalizePrefixo(p){ return String(p||'').trim().toUpperCase().replace(/\s+/g,' ').replace(/\s*-\s*/g,'-').replace(/\s+(?=\d)/g,'-'); }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
-console.log('🟢 Script iniciado');
-
 async function apiCall(action, payload){
-  console.log('📤 apiCall:', action);
   try{
     const r = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(Object.assign({ action, usuario: USUARIO_ATUAL }, payload || {}))
     });
-    console.log('📥 HTTP:', r.status);
     if(!r.ok) return { ok:false, error:'HTTP ' + r.status };
-    const json = await r.json();
-    console.log('📥 JSON:', json);
-    return json;
+    return await r.json();
   }catch(err){
-    console.error('❌ Erro fetch:', err);
+    console.error('Erro fetch:', err);
     return { ok:false, error: err.toString() };
   }
 }
 
 async function loadData(){
-  console.log('🔄 loadData começou');
   try{
     const r = await apiCall('listarViaturas');
-    console.log('✅ Resposta:', r);
     if(!r.ok){
       document.getElementById('updateStatus').textContent = 'Falha: ' + (r.error || 'desconhecido');
+      VIATURAS = [];
+      render();
       return;
     }
-    VIATURAS = r.viaturas || [];
-    console.log('📊 VIATURAS setado:', VIATURAS);
+    VIATURAS = Array.isArray(r.viaturas) ? r.viaturas : [];
     document.getElementById('updateStatus').textContent = 'Atualizado em ' + new Date().toLocaleTimeString('pt-BR');
     render();
-    console.log('🎨 render() executado');
   }catch(err){
-    console.error('❌ Erro em loadData:', err);
-    document.getElementById('updateStatus').textContent = 'Falha ao carregar dados';
+    console.error('Erro em loadData:', err);
+    document.getElementById('updateStatus').textContent = 'Erro: ' + err.message;
+    VIATURAS = [];
+    render();
   }
 }
 
 function renderSummary(){
-  const total = VIATURAS.length;
-  const ativas = VIATURAS.filter(v => v.origem === 'ativa').length;
-  const reservas = VIATURAS.filter(v => v.origem === 'reserva').length;
+  try{
+    const total = VIATURAS.length;
+    const ativas = VIATURAS.filter(v => v.origem === 'ativa').length;
+    const reservas = VIATURAS.filter(v => v.origem === 'reserva').length;
 
-  const porGbm = {};
-  VIATURAS.filter(v => v.origem === 'ativa').forEach(v => {
-    if(!v.gbm) return;
-    porGbm[v.gbm] = (porGbm[v.gbm] || 0) + 1;
-  });
+    const porGbm = {};
+    VIATURAS.filter(v => v.origem === 'ativa' && v.gbm).forEach(v => {
+      porGbm[v.gbm] = (porGbm[v.gbm] || 0) + 1;
+    });
 
-  let html = `
-    <div class="summary-card total" data-tab="todas">
-      <div class="label">Total geral</div>
-      <div class="value">${total}</div>
-    </div>
-    <div class="summary-card ativas" data-tab="ativas">
-      <div class="label">Ativas</div>
-      <div class="value">${ativas}</div>
-    </div>
-    <div class="summary-card reservas" data-tab="reservas">
-      <div class="label">Reservas</div>
-      <div class="value">${reservas}</div>
-    </div>`;
+    let html = `
+      <div class="summary-card total" data-tab="todas">
+        <div class="label">Total geral</div>
+        <div class="value">${total}</div>
+      </div>
+      <div class="summary-card ativas" data-tab="ativas">
+        <div class="label">Ativas</div>
+        <div class="value">${ativas}</div>
+      </div>
+      <div class="summary-card reservas" data-tab="reservas">
+        <div class="label">Reservas</div>
+        <div class="value">${reservas}</div>
+      </div>`;
 
-  Object.keys(porGbm).sort().forEach(gbm => {
-    html += `<div class="summary-card gbm" data-tab="${escapeHtml(gbm)}">
-      <div class="label">${escapeHtml(gbm)}</div>
-      <div class="value">${porGbm[gbm]}</div>
-    </div>`;
-  });
+    Object.keys(porGbm).sort().forEach(gbm => {
+      html += `<div class="summary-card gbm" data-tab="${escapeHtml(gbm)}">
+        <div class="label">${escapeHtml(gbm)}</div>
+        <div class="value">${porGbm[gbm]}</div>
+      </div>`;
+    });
 
-  const cont = document.getElementById('summaryCards');
-  if(!cont){ console.error('❌ #summaryCards não encontrado'); return; }
-  cont.innerHTML = html;
-  cont.querySelectorAll('.summary-card').forEach(c => {
-    c.addEventListener('click', () => { activeTab = c.dataset.tab; render(); });
-  });
+    const cont = document.getElementById('summaryCards');
+    cont.innerHTML = html;
+    cont.querySelectorAll('.summary-card').forEach(c => {
+      c.addEventListener('click', () => { activeTab = c.dataset.tab; render(); });
+    });
+  }catch(e){ console.error('renderSummary:', e); }
 }
 
 function renderTabs(){
-  const gbms = [...new Set(VIATURAS.filter(v => v.gbm).map(v => v.gbm))].sort();
-  const container = document.getElementById('tabsContainer');
-  if(!container){ console.error('❌ #tabsContainer não encontrado'); return; }
-  let html = `<button class="tab ${activeTab==='todas'?'active':''}" data-tab="todas">Todas</button>`;
-  html += `<button class="tab ${activeTab==='ativas'?'active':''}" data-tab="ativas">Ativas</button>`;
-  html += `<button class="tab ${activeTab==='reservas'?'active':''}" data-tab="reservas">Reservas</button>`;
-  gbms.forEach(g => {
-    html += `<button class="tab ${activeTab===g?'active':''}" data-tab="${escapeHtml(g)}">${escapeHtml(g)}</button>`;
-  });
-  container.innerHTML = html;
-  container.querySelectorAll('.tab').forEach(t => {
-    t.addEventListener('click', () => { activeTab = t.dataset.tab; render(); });
-  });
+  try{
+    const gbms = [...new Set(VIATURAS.filter(v => v.gbm).map(v => v.gbm))].sort();
+    const container = document.getElementById('tabsContainer');
+    let html = `<button class="tab ${activeTab==='todas'?'active':''}" data-tab="todas">Todas</button>`;
+    html += `<button class="tab ${activeTab==='ativas'?'active':''}" data-tab="ativas">Ativas</button>`;
+    html += `<button class="tab ${activeTab==='reservas'?'active':''}" data-tab="reservas">Reservas</button>`;
+    gbms.forEach(g => {
+      html += `<button class="tab ${activeTab===g?'active':''}" data-tab="${escapeHtml(g)}">${escapeHtml(g)}</button>`;
+    });
+    container.innerHTML = html;
+    container.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => { activeTab = t.dataset.tab; render(); });
+    });
+  }catch(e){ console.error('renderTabs:', e); }
 }
 
 function renderGrid(){
-  const searchEl = document.getElementById('search');
-  const gridEl = document.getElementById('vehGrid');
-  if(!searchEl || !gridEl){ console.error('❌ #search ou #vehGrid não encontrado'); return; }
-  const q = normalizeStr(searchEl.value);
-  let lista = VIATURAS;
+  try{
+    const q = normalizeStr(document.getElementById('search').value);
+    let lista = VIATURAS;
 
-  if(activeTab === 'ativas') lista = lista.filter(v => v.origem === 'ativa');
-  else if(activeTab === 'reservas') lista = lista.filter(v => v.origem === 'reserva');
-  else if(activeTab !== 'todas') lista = lista.filter(v => v.gbm === activeTab);
+    if(activeTab === 'ativas') lista = lista.filter(v => v.origem === 'ativa');
+    else if(activeTab === 'reservas') lista = lista.filter(v => v.origem === 'reserva');
+    else if(activeTab !== 'todas') lista = lista.filter(v => v.gbm === activeTab);
 
-  if(q) lista = lista.filter(v => normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q));
+    if(q) lista = lista.filter(v => normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q));
 
-  if(lista.length === 0){
-    gridEl.innerHTML = '<div class="empty">Nenhuma viatura encontrada.</div>';
-    return;
-  }
+    if(lista.length === 0){
+      document.getElementById('vehGrid').innerHTML = '<div class="empty">Nenhuma viatura encontrada.</div>';
+      return;
+    }
 
-  const html = lista.map(v => `
-    <div class="veh-card ${v.origem==='reserva'?'reserva':''}">
-      <div class="veh-prefix">
-        ${escapeHtml(v.prefixo)}
-        <span class="badge ${v.origem==='reserva'?'reserva':'ativa'}">${v.origem==='reserva'?'Reserva':'Ativa'}</span>
+    const html = lista.map(v => `
+      <div class="veh-card ${v.origem==='reserva'?'reserva':''}">
+        <div class="veh-prefix">
+          ${escapeHtml(v.prefixo)}
+          <span class="badge ${v.origem==='reserva'?'reserva':'ativa'}">${v.origem==='reserva'?'Reserva':'Ativa'}</span>
+        </div>
+        <div class="veh-gbm">${escapeHtml(v.gbm || 'Sem GBM')}</div>
+        <div class="veh-actions">
+          ${v.origem === 'ativa' ? `<button class="btn ghost" data-action="mudar" data-prefixo="${escapeHtml(v.prefixo)}">Mudar GBM</button>` : ''}
+          <button class="btn ghost" data-action="permutar" data-prefixo="${escapeHtml(v.prefixo)}" data-origem="${v.origem}" data-gbm="${escapeHtml(v.gbm||'')}">
+            ${v.origem==='ativa'?'→ Reserva':'→ Ativa'}
+          </button>
+          <button class="btn ghost danger" data-action="baixar" data-prefixo="${escapeHtml(v.prefixo)}" data-gbm="${escapeHtml(v.gbm||'')}" data-origem="${v.origem}">Baixar</button>
+        </div>
       </div>
-      <div class="veh-gbm">${escapeHtml(v.gbm || 'Sem GBM')}</div>
-      <div class="veh-actions">
-        ${v.origem === 'ativa' ? `<button class="btn ghost" data-action="mudar" data-prefixo="${escapeHtml(v.prefixo)}">Mudar GBM</button>` : ''}
-        <button class="btn ghost" data-action="permutar" data-prefixo="${escapeHtml(v.prefixo)}" data-origem="${v.origem}">
-          ${v.origem==='ativa'?'→ Reserva':'→ Ativa'}
-        </button>
-        <button class="btn ghost danger" data-action="baixar" data-prefixo="${escapeHtml(v.prefixo)}">Baixar</button>
-      </div>
-    </div>
-  `).join('');
+    `).join('');
 
-  gridEl.innerHTML = html;
+    document.getElementById('vehGrid').innerHTML = html;
 
-  document.querySelectorAll('[data-action="mudar"]').forEach(btn => {
-    btn.addEventListener('click', () => abrirModalMudarGbm(btn.dataset.prefixo));
-  });
-  document.querySelectorAll('[data-action="permutar"]').forEach(btn => {
-    btn.addEventListener('click', () => abrirModalPermutar(btn.dataset.prefixo, btn.dataset.origem));
-  });
-  document.querySelectorAll('[data-action="baixar"]').forEach(btn => {
-    btn.addEventListener('click', () => abrirModalBaixar(btn.dataset.prefixo));
-  });
+    document.querySelectorAll('[data-action="mudar"]').forEach(btn => {
+      btn.addEventListener('click', () => abrirModalMudarGbm(btn.dataset.prefixo));
+    });
+    document.querySelectorAll('[data-action="permutar"]').forEach(btn => {
+      btn.addEventListener('click', () => abrirModalPermutar(btn.dataset.prefixo, btn.dataset.origem, btn.dataset.gbm));
+    });
+    document.querySelectorAll('[data-action="baixar"]').forEach(btn => {
+      btn.addEventListener('click', () => abrirModalBaixar(btn.dataset.prefixo, btn.dataset.gbm, btn.dataset.origem));
+    });
+  }catch(e){ console.error('renderGrid:', e); }
 }
 
 function render(){
-  console.log('🎨 render() chamado, VIATURAS:', VIATURAS.length);
   renderSummary();
   renderTabs();
   renderGrid();
@@ -164,6 +155,9 @@ function render(){
 
 document.getElementById('search').addEventListener('input', render);
 
+// ==============================================
+// MODAL GENÉRICO
+// ==============================================
 function abrirModal(titulo, camposHtml, onConfirm){
   document.getElementById('modalTitle').textContent = titulo;
   document.getElementById('modalFields').innerHTML = camposHtml;
@@ -179,13 +173,43 @@ function abrirModal(titulo, camposHtml, onConfirm){
     cancel.removeEventListener('click', fechar);
   }
   async function handler(){
-    const ok = await onConfirm();
-    if(ok) fechar();
+    try{
+      const ok = await onConfirm();
+      if(ok) fechar();
+    }catch(e){
+      alert('Erro: ' + e.message);
+    }
   }
   confirm.addEventListener('click', handler);
   cancel.addEventListener('click', fechar);
 }
 
+// Lista de opções para substituta (todas as outras viaturas)
+function htmlOpcoesSubstituta(prefixoExcluido){
+  const outras = VIATURAS.filter(v => v.prefixo !== prefixoExcluido);
+  if(outras.length === 0){
+    return `<option value="">— Nenhuma outra viatura disponível —</option>`;
+  }
+  let html = `<option value="">— Nenhuma (deixar vaga) —</option>`;
+  const reservas = outras.filter(v => v.origem === 'reserva');
+  const ativas = outras.filter(v => v.origem === 'ativa');
+
+  if(reservas.length){
+    html += `<optgroup label="Reservas (serão promovidas)">`;
+    reservas.forEach(v => html += `<option value="${escapeHtml(v.prefixo)}">${escapeHtml(v.prefixo)}</option>`);
+    html += `</optgroup>`;
+  }
+  if(ativas.length){
+    html += `<optgroup label="Ativas (serão realocadas)">`;
+    ativas.forEach(v => html += `<option value="${escapeHtml(v.prefixo)}">${escapeHtml(v.prefixo)} · ${escapeHtml(v.gbm)}</option>`);
+    html += `</optgroup>`;
+  }
+  return html;
+}
+
+// ==============================================
+// MUDAR GBM
+// ==============================================
 function abrirModalMudarGbm(prefixo){
   const v = VIATURAS.find(x => x.prefixo === prefixo);
   if(!v) return;
@@ -194,7 +218,7 @@ function abrirModalMudarGbm(prefixo){
       <input type="text" value="${escapeHtml(v.gbm)}" disabled style="opacity:.6;">
     </label>
     <label>Novo GBM
-      <input type="text" id="modalGbm" placeholder="Ex: 1º GBM">
+      <input type="text" id="modalGbm" placeholder="Ex: 1º GBM" autofocus>
     </label>
   `, async () => {
     const novoGbm = document.getElementById('modalGbm').value.trim().toUpperCase();
@@ -206,42 +230,70 @@ function abrirModalMudarGbm(prefixo){
   });
 }
 
-function abrirModalPermutar(prefixo, origem){
+// ==============================================
+// PERMUTAR (ativa ↔ reserva) — com substituta
+// ==============================================
+function abrirModalPermutar(prefixo, origem, gbm){
   const destino = origem === 'ativa' ? 'reserva' : 'ativa';
-  abrirModal('Permutar viatura · ' + prefixo, `
-    <p style="font-size:13px;color:var(--text-dim);margin:0;">
-      Mover <b>${escapeHtml(prefixo)}</b> de <b>${origem}</b> para <b>${destino}</b>?
-    </p>
-  `, async () => {
-    const r = await apiCall('permutarViatura', { prefixo, destino });
+  const titulo = origem === 'ativa' ? `Mover ${prefixo} para Reserva` : `Mover ${prefixo} para Ativa`;
+
+  let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
+    <b>${escapeHtml(prefixo)}</b> ${gbm ? `· ${escapeHtml(gbm)}` : ''} será movida para <b>${destino}</b>.
+  </p>`;
+
+  // Se está saindo de ativa, mostra select de substituta
+  if(origem === 'ativa' && gbm){
+    corpo += `<label>Viatura substituta em ${escapeHtml(gbm)} (opcional)
+      <select id="modalSubstituto">${htmlOpcoesSubstituta(prefixo)}</select>
+    </label>`;
+  }
+
+  abrirModal(titulo, corpo, async () => {
+    const sub = document.getElementById('modalSubstituto');
+    const substituto = sub ? sub.value : '';
+    const r = await apiCall('permutarViatura', { prefixo, destino, substituto });
     if(!r.ok){ alert('Erro: ' + r.error); return false; }
     await loadData();
     return true;
   });
 }
 
-function abrirModalBaixar(prefixo){
-  abrirModal('Baixar viatura · ' + prefixo, `
-    <p style="font-size:13px;color:var(--text-dim);margin:0;">
-      Confirma o baixamento de <b>${escapeHtml(prefixo)}</b>?
-    </p>
-    <label>Motivo
-      <input type="text" id="modalMotivo" placeholder="Ex: manutenção preventiva">
-    </label>
-  `, async () => {
+// ==============================================
+// BAIXAR — com substituta
+// ==============================================
+function abrirModalBaixar(prefixo, gbm, origem){
+  let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
+    Confirma o baixamento de <b>${escapeHtml(prefixo)}</b>${gbm ? ` (${escapeHtml(gbm)})` : ''}?
+  </p>
+  <label>Motivo
+    <input type="text" id="modalMotivo" placeholder="Ex: manutenção preventiva" autofocus>
+  </label>`;
+
+  if(origem === 'ativa' && gbm){
+    corpo += `<label>Viatura substituta em ${escapeHtml(gbm)} (opcional)
+      <select id="modalSubstituto">${htmlOpcoesSubstituta(prefixo)}</select>
+    </label>`;
+  }
+
+  abrirModal('Baixar viatura · ' + prefixo, corpo, async () => {
     const motivo = document.getElementById('modalMotivo').value.trim();
     if(!motivo){ alert('Informe o motivo.'); return false; }
-    const r = await apiCall('baixarViatura', { prefixo, motivo });
+    const sub = document.getElementById('modalSubstituto');
+    const substituto = sub ? sub.value : '';
+    const r = await apiCall('baixarViatura', { prefixo, motivo, substituto });
     if(!r.ok){ alert('Erro: ' + r.error); return false; }
     await loadData();
     return true;
   });
 }
 
+// ==============================================
+// ADICIONAR
+// ==============================================
 document.getElementById('addBtn').addEventListener('click', () => {
   abrirModal('Nova Viatura', `
     <label>Prefixo
-      <input type="text" id="newPrefixo" placeholder="Ex: ABT-05">
+      <input type="text" id="newPrefixo" placeholder="Ex: ABT-05" autofocus>
     </label>
     <label>GBM
       <input type="text" id="newGbm" placeholder="Ex: 1º GBM">
@@ -257,7 +309,9 @@ document.getElementById('addBtn').addEventListener('click', () => {
   });
 });
 
-console.log('🟢 Chamando loadData...');
+// ==============================================
+// INICIALIZAÇÃO
+// ==============================================
 loadData();
 setInterval(loadData, 180000);
 </script>
