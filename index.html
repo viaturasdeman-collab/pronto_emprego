@@ -138,21 +138,47 @@ function normalizeStr(s){ return String(s||'').normalize('NFD').replace(/[\u0300
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
 
+// ==============================================
+// API — com timeout de 45s e logs detalhados
+// ==============================================
 async function apiCall(action, payload){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
+
   try{
+    console.log('📤 Enviando:', action, payload || {});
     const r = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(Object.assign({ action, usuario: USUARIO_ATUAL }, payload || {}))
+      body: JSON.stringify(Object.assign({ action, usuario: USUARIO_ATUAL }, payload || {})),
+      signal: controller.signal
     });
-    if(!r.ok) return { ok:false, error:'HTTP ' + r.status };
-    return await r.json();
+    clearTimeout(timeoutId);
+
+    console.log('📥 Status HTTP:', r.status);
+    const txt = await r.text();
+    console.log('📥 Resposta:', txt.substring(0, 200));
+
+    if(!r.ok) return { ok:false, error:'HTTP ' + r.status + ' — ' + txt.substring(0, 100) };
+
+    try{
+      return JSON.parse(txt);
+    }catch(e){
+      return { ok:false, error:'Resposta não é JSON: ' + txt.substring(0, 100) };
+    }
   }catch(err){
-    console.error('Erro fetch:', err);
-    return { ok:false, error: err.toString() };
+    clearTimeout(timeoutId);
+    console.error('❌ Erro fetch:', err);
+    if(err.name === 'AbortError'){
+      return { ok:false, error:'Tempo esgotado (45s). A planilha pode estar lenta. Tente novamente.' };
+    }
+    return { ok:false, error:'Erro de rede: ' + err.message + '. Tente novamente.' };
   }
 }
 
+// ==============================================
+// CARREGAMENTO
+// ==============================================
 async function loadData(){
   try{
     const r = await apiCall('listarViaturas');
@@ -174,6 +200,9 @@ async function loadData(){
   }
 }
 
+// ==============================================
+// RENDERIZAÇÃO
+// ==============================================
 function renderSummary(){
   try{
     const total = VIATURAS.length;
@@ -308,6 +337,9 @@ function render(){
 
 document.getElementById('search').addEventListener('input', render);
 
+// ==============================================
+// MODAL GENÉRICO
+// ==============================================
 function abrirModal(titulo, camposHtml, onConfirm){
   document.getElementById('modalTitle').textContent = titulo;
   document.getElementById('modalFields').innerHTML = camposHtml;
@@ -321,12 +353,24 @@ function abrirModal(titulo, camposHtml, onConfirm){
     modal.style.display = 'none';
     confirm.removeEventListener('click', handler);
     cancel.removeEventListener('click', fechar);
+    confirm.disabled = false;
+    confirm.textContent = 'Confirmar';
   }
   async function handler(){
+    // ✅ Proteção contra duplo clique
+    if(confirm.disabled) return;
+    confirm.disabled = true;
+    confirm.textContent = 'Processando...';
+
     try{
       const ok = await onConfirm();
       if(ok) fechar();
-    }catch(e){ alert('Erro: ' + e.message); }
+      else { confirm.disabled = false; confirm.textContent = 'Confirmar'; }
+    }catch(e){
+      alert('Erro: ' + e.message);
+      confirm.disabled = false;
+      confirm.textContent = 'Confirmar';
+    }
   }
   confirm.addEventListener('click', handler);
   cancel.addEventListener('click', fechar);
@@ -360,6 +404,9 @@ function htmlOpcoesSubstituta(prefixoExcluido){
   return html;
 }
 
+// ==============================================
+// MUDAR LOCAL
+// ==============================================
 function abrirModalMudarLocal(prefixo){
   const v = VIATURAS.find(x => x.prefixo === prefixo);
   if(!v) return;
@@ -384,6 +431,9 @@ function abrirModalMudarLocal(prefixo){
   });
 }
 
+// ==============================================
+// PERMUTAR
+// ==============================================
 function abrirModalPermutar(prefixo, origem, gbm){
   const destinoAPI = origem === 'ativa' ? 'reservas' : 'ativas';
   const destinoLabel = origem === 'ativa' ? 'DEMAN (Reserva)' : 'Ativa';
@@ -404,12 +454,14 @@ function abrirModalPermutar(prefixo, origem, gbm){
     const substituto = sub ? sub.value : '';
     const r = await apiCall('permutarViatura', { prefixo, destino: destinoAPI, substituto });
     if(!r.ok){ alert('Erro: ' + r.error); return false; }
-    if(r.aviso){ /* silencioso, só atualiza */ }
     await loadData();
     return true;
   });
 }
 
+// ==============================================
+// BAIXAR
+// ==============================================
 function abrirModalBaixar(prefixo, gbm, origem){
   let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
     Confirma o baixamento de <b>${escapeHtml(prefixo)}</b>${gbm ? ` (${escapeHtml(gbm)})` : ''}?
@@ -436,6 +488,9 @@ function abrirModalBaixar(prefixo, gbm, origem){
   });
 }
 
+// ==============================================
+// REATIVAR
+// ==============================================
 function abrirModalReativar(prefixo){
   const v = VIATURAS.find(x => x.prefixo === prefixo);
   if(!v) return;
@@ -460,6 +515,9 @@ function abrirModalReativar(prefixo){
   });
 }
 
+// ==============================================
+// MOVER BAIXADA PARA RESERVA
+// ==============================================
 function abrirModalMoverReserva(prefixo){
   abrirModal('Mover para Reserva · ' + prefixo, `
     <p style="font-size:13px;color:var(--text-dim);margin:0;">
@@ -473,6 +531,9 @@ function abrirModalMoverReserva(prefixo){
   });
 }
 
+// ==============================================
+// ADICIONAR
+// ==============================================
 document.getElementById('addBtn').addEventListener('click', () => {
   abrirModal('Nova Viatura', `
     <label>Prefixo
@@ -493,6 +554,9 @@ document.getElementById('addBtn').addEventListener('click', () => {
   });
 });
 
+// ==============================================
+// INICIALIZAÇÃO
+// ==============================================
 loadData();
 setInterval(loadData, 180000);
 </script>
