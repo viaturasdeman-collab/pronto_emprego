@@ -15,8 +15,9 @@
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
-  .wrap{max-width:1280px;margin:0 auto;padding:20px 18px 60px;}
+  .wrap{max-width:1400px;margin:0 auto;padding:20px 18px 60px;}
 
+  /* ============ HEADER ============ */
   header{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;
     padding:20px 22px;background:linear-gradient(135deg,var(--bg-elev),var(--surface));
     border:1px solid var(--border);border-radius:14px;margin-bottom:18px;position:relative;overflow:hidden;}
@@ -27,23 +28,22 @@
 
   .update-indicator{font-size:11px;color:var(--text-faint);text-align:right;margin-bottom:14px;}
 
-  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+  /* ============ CARDS DE RESUMO ============ */
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
   .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
   .summary-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;}
   .summary-card.total::before{background:var(--amber);}
   .summary-card.ativas::before{background:var(--azul);}
   .summary-card.reservas::before{background:var(--roxo);}
   .summary-card.baixadas::before{background:var(--vermelho);}
-  .summary-card.local::before{background:var(--verde);}
   .summary-card .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'IBM Plex Mono',monospace;}
   .summary-card .value{font-family:'Rajdhani',sans-serif;font-size:34px;font-weight:700;line-height:1;}
   .summary-card.total .value{color:var(--amber);}
   .summary-card.ativas .value{color:var(--azul);}
   .summary-card.reservas .value{color:var(--roxo);}
   .summary-card.baixadas .value{color:var(--vermelho);}
-  .summary-card.local .value{color:var(--verde);}
-  .summary-card.local .label{font-size:10.5px;}
 
+  /* ============ TOOLBAR ============ */
   .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;overflow-x:auto;}
   .tab{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;padding:8px 16px;border-radius:7px;cursor:pointer;color:var(--text-dim);border:none;background:transparent;white-space:nowrap;}
@@ -57,23 +57,32 @@
   .btn.ghost{background:transparent;}
   .btn.danger:hover{border-color:var(--vermelho);color:var(--vermelho);}
 
-  .veh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
-  .veh-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--azul);border-radius:11px;padding:14px 16px;transition:transform .15s, box-shadow .15s;}
-  .veh-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3);}
-  .veh-card.reserva{border-left-color:var(--roxo);}
-  .veh-card.baixada{border-left-color:var(--vermelho);opacity:.92;}
-  .veh-prefix{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:20px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
-  .veh-gbm{font-size:12px;color:var(--text-dim);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;}
-  .veh-motivo{font-size:11px;color:var(--text-dim);margin-bottom:4px;}
-  .veh-data{font-size:10px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;}
-  .veh-actions{display:flex;gap:6px;flex-wrap:wrap;}
-  .veh-actions .btn{font-size:12px;padding:6px 10px;}
+  /* ============ CARDS POR LOCAL ============ */
+  .local-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;}
+  .local-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;}
+  .local-card.reserva{border-color:rgba(177,140,255,.4);}
+  .local-card.baixadas{border-color:rgba(239,83,80,.4);}
 
-  .badge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;border-radius:12px;border:1px solid var(--border);white-space:nowrap;}
-  .badge.ativa{background:rgba(0,171,251,.15);color:var(--azul);border-color:var(--azul);}
-  .badge.reserva{background:rgba(177,140,255,.15);color:var(--roxo);border-color:var(--roxo);}
-  .badge.baixada{background:rgba(239,83,80,.15);color:var(--vermelho);border-color:var(--vermelho);}
+  .local-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface-2);border-bottom:1px solid var(--border);gap:10px;}
+  .local-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;color:var(--amber);letter-spacing:.02em;}
+  .local-card.reserva .local-name{color:var(--roxo);}
+  .local-card.baixadas .local-name{color:var(--vermelho);}
+  .local-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 10px;white-space:nowrap;}
 
+  .local-body{padding:6px 10px;flex:1;}
+
+  /* Linha de viatura dentro do card */
+  .veh-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 6px;border-bottom:1px solid rgba(48,58,71,.4);}
+  .veh-row:last-child{border-bottom:none;}
+  .veh-row-left{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
+  .veh-row-prefix{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px;color:var(--text);}
+  .veh-row-info{font-size:10px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;overflow-wrap:break-word;}
+  .veh-row-actions{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;}
+  .veh-row-actions .btn{font-size:11px;padding:5px 9px;border-radius:6px;}
+
+  .local-empty{font-size:12px;color:var(--text-faint);padding:20px;text-align:center;font-style:italic;}
+
+  /* ============ MODAL ============ */
   .modal-overlay{position:fixed;inset:0;background:rgba(16,20,26,.85);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;}
   .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:90vh;overflow-y:auto;}
   .modal-box h2{font-family:'Rajdhani',sans-serif;font-size:20px;margin:0;color:var(--amber);}
@@ -105,7 +114,7 @@
   <header>
     <div class="htitle">
       <div class="eyebrow">DEMAN · Gestão de Viaturas</div>
-      <h1>Painel de Viaturas</h1>
+      <h1>Painel de Viaturas por Local</h1>
     </div>
   </header>
 
@@ -121,7 +130,7 @@
     </div>
   </div>
 
-  <div class="veh-grid" id="vehGrid"></div>
+  <div class="local-grid" id="localGrid"></div>
 
   <footer>Dados carregados da planilha Google Sheets.</footer>
 </div>
@@ -139,7 +148,7 @@ function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; 
 function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
 
 // ==============================================
-// API — com timeout de 45s e logs detalhados
+// API
 // ==============================================
 async function apiCall(action, payload){
   const controller = new AbortController();
@@ -170,9 +179,9 @@ async function apiCall(action, payload){
     clearTimeout(timeoutId);
     console.error('❌ Erro fetch:', err);
     if(err.name === 'AbortError'){
-      return { ok:false, error:'Tempo esgotado (45s). A planilha pode estar lenta. Tente novamente.' };
+      return { ok:false, error:'Tempo esgotado (45s). Tente novamente.' };
     }
-    return { ok:false, error:'Erro de rede: ' + err.message + '. Tente novamente.' };
+    return { ok:false, error:'Erro de rede: ' + err.message };
   }
 }
 
@@ -201,7 +210,7 @@ async function loadData(){
 }
 
 // ==============================================
-// RENDERIZAÇÃO
+// RESUMO
 // ==============================================
 function renderSummary(){
   try{
@@ -210,12 +219,7 @@ function renderSummary(){
     const reservas = VIATURAS.filter(v => v.origem === 'reserva').length;
     const baixadas = VIATURAS.filter(v => v.origem === 'baixada').length;
 
-    const porLocal = {};
-    VIATURAS.filter(v => v.origem === 'ativa' && v.gbm).forEach(v => {
-      porLocal[v.gbm] = (porLocal[v.gbm] || 0) + 1;
-    });
-
-    let html = `
+    document.getElementById('summaryCards').innerHTML = `
       <div class="summary-card total">
         <div class="label">Total geral</div>
         <div class="value">${total}</div>
@@ -232,18 +236,12 @@ function renderSummary(){
         <div class="label">Baixadas</div>
         <div class="value">${baixadas}</div>
       </div>`;
-
-    Object.keys(porLocal).sort().forEach(local => {
-      html += `<div class="summary-card local">
-        <div class="label">${escapeHtml(local)}</div>
-        <div class="value">${porLocal[local]}</div>
-      </div>`;
-    });
-
-    document.getElementById('summaryCards').innerHTML = html;
   }catch(e){ console.error('renderSummary:', e); }
 }
 
+// ==============================================
+// ABAS
+// ==============================================
 function renderTabs(){
   try{
     const container = document.getElementById('tabsContainer');
@@ -256,83 +254,166 @@ function renderTabs(){
   }catch(e){ console.error('renderTabs:', e); }
 }
 
-function renderGrid(){
+// ==============================================
+// LINHA DE VIATURA (dentro de um card de local)
+// ==============================================
+function htmlVehRow(v){
+  if(v.origem === 'baixada'){
+    return `
+      <div class="veh-row">
+        <div class="veh-row-left">
+          <span class="veh-row-prefix">${escapeHtml(v.prefixo)}</span>
+          ${v.motivo ? `<span class="veh-row-info">Motivo: ${escapeHtml(v.motivo)}</span>` : ''}
+          ${v.data ? `<span class="veh-row-info">${escapeHtml(v.data)}</span>` : ''}
+        </div>
+        <div class="veh-row-actions">
+          <button class="btn ghost" data-action="reativar" data-prefixo="${escapeAttr(v.prefixo)}">Reativar</button>
+          <button class="btn ghost" data-action="moverReserva" data-prefixo="${escapeAttr(v.prefixo)}">→ Reserva</button>
+        </div>
+      </div>`;
+  }
+
+  if(v.origem === 'reserva'){
+    return `
+      <div class="veh-row">
+        <div class="veh-row-left">
+          <span class="veh-row-prefix">${escapeHtml(v.prefixo)}</span>
+        </div>
+        <div class="veh-row-actions">
+          <button class="btn ghost" data-action="permutar" data-prefixo="${escapeAttr(v.prefixo)}" data-origem="reserva" data-gbm="">→ Ativa</button>
+          <button class="btn ghost danger" data-action="baixar" data-prefixo="${escapeAttr(v.prefixo)}" data-gbm="" data-origem="reserva">Baixar</button>
+        </div>
+      </div>`;
+  }
+
+  // Ativa
+  return `
+    <div class="veh-row">
+      <div class="veh-row-left">
+        <span class="veh-row-prefix">${escapeHtml(v.prefixo)}</span>
+      </div>
+      <div class="veh-row-actions">
+        <button class="btn ghost" data-action="mudar" data-prefixo="${escapeAttr(v.prefixo)}">Mudar</button>
+        <button class="btn ghost" data-action="permutar" data-prefixo="${escapeAttr(v.prefixo)}" data-origem="ativa" data-gbm="${escapeAttr(v.gbm||'')}">→ Res</button>
+        <button class="btn ghost danger" data-action="baixar" data-prefixo="${escapeAttr(v.prefixo)}" data-gbm="${escapeAttr(v.gbm||'')}" data-origem="ativa">Baixar</button>
+      </div>
+    </div>`;
+}
+
+// ==============================================
+// CARD DE LOCAL
+// ==============================================
+function htmlLocalCard(nome, viaturas, tipo){
+  const qtd = viaturas.length;
+  const label = qtd === 1 ? '1 viatura' : qtd + ' viaturas';
+  const bodyHtml = qtd === 0
+    ? `<div class="local-empty">Nenhuma viatura neste local</div>`
+    : viaturas.sort((a,b)=>a.prefixo.localeCompare(b.prefixo)).map(htmlVehRow).join('');
+
+  return `
+    <div class="local-card ${tipo || ''}">
+      <div class="local-head">
+        <div class="local-name">${escapeHtml(nome)}</div>
+        <div class="local-count">${label}</div>
+      </div>
+      <div class="local-body">${bodyHtml}</div>
+    </div>`;
+}
+
+// ==============================================
+// GRID PRINCIPAL — agrupado por LOCAL
+// ==============================================
+function renderLocalGrid(){
   try{
     const q = normalizeStr(document.getElementById('search').value);
-    let lista = VIATURAS;
+    const container = document.getElementById('localGrid');
 
+    // Modo "Baixadas"
     if(activeTab === 'baixadas'){
-      lista = lista.filter(v => v.origem === 'baixada');
-    } else {
-      lista = lista.filter(v => v.origem !== 'baixada');
-    }
+      let baixadas = VIATURAS.filter(v => v.origem === 'baixada');
+      if(q) baixadas = baixadas.filter(v => normalizeStr(v.prefixo).includes(q) || normalizeStr(v.motivo).includes(q));
 
-    if(q) lista = lista.filter(v => normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q));
-
-    if(lista.length === 0){
-      document.getElementById('vehGrid').innerHTML = '<div class="empty">Nenhuma viatura encontrada.</div>';
+      if(baixadas.length === 0){
+        container.innerHTML = '<div class="empty">Nenhuma viatura baixada.</div>';
+        return;
+      }
+      container.innerHTML = htmlLocalCard('BAIXADAS', baixadas, 'baixadas');
+      bindActions();
       return;
     }
 
-    const html = lista.map(v => {
-      if(v.origem === 'baixada'){
-        return `
-          <div class="veh-card baixada">
-            <div class="veh-prefix">
-              ${escapeHtml(v.prefixo)}
-              <span class="badge baixada">Baixada</span>
-            </div>
-            <div class="veh-gbm">${v.gbm ? 'Era ' + escapeHtml(v.gbm) : 'Sem local'}</div>
-            ${v.motivo ? `<div class="veh-motivo">Motivo: ${escapeHtml(v.motivo)}</div>` : ''}
-            ${v.data ? `<div class="veh-data">${escapeHtml(v.data)}</div>` : ''}
-            <div class="veh-actions">
-              <button class="btn ghost" data-action="reativar" data-prefixo="${escapeAttr(v.prefixo)}">Reativar</button>
-              <button class="btn ghost" data-action="moverReserva" data-prefixo="${escapeAttr(v.prefixo)}">→ Reserva</button>
-            </div>
-          </div>`;
-      }
+    // Modo "Todas" — agrupa ativas por local + DEMAN (reservas)
+    const ativas = VIATURAS.filter(v => v.origem === 'ativa');
+    const reservas = VIATURAS.filter(v => v.origem === 'reserva');
 
-      return `
-        <div class="veh-card ${v.origem==='reserva'?'reserva':''}">
-          <div class="veh-prefix">
-            ${escapeHtml(v.prefixo)}
-            <span class="badge ${v.origem==='reserva'?'reserva':'ativa'}">${v.origem==='reserva'?'Reserva':'Ativa'}</span>
-          </div>
-          <div class="veh-gbm">${escapeHtml(v.gbm || 'DEMAN')}</div>
-          <div class="veh-actions">
-            ${v.origem === 'ativa' ? `<button class="btn ghost" data-action="mudar" data-prefixo="${escapeAttr(v.prefixo)}">Mudar local</button>` : ''}
-            <button class="btn ghost" data-action="permutar" data-prefixo="${escapeAttr(v.prefixo)}" data-origem="${v.origem}" data-gbm="${escapeAttr(v.gbm||'')}">
-              ${v.origem==='ativa'?'→ Reserva':'→ Ativa'}
-            </button>
-            <button class="btn ghost danger" data-action="baixar" data-prefixo="${escapeAttr(v.prefixo)}" data-gbm="${escapeAttr(v.gbm||'')}" data-origem="${v.origem}">Baixar</button>
-          </div>
-        </div>`;
-    }).join('');
+    // Filtro de busca
+    const matchesQ = v => !q || normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q);
 
-    document.getElementById('vehGrid').innerHTML = html;
+    // Monta agrupamento por local (respeitando a ordem da whitelist)
+    const porLocal = {};
+    LOCAIS.forEach(l => porLocal[l] = []);
+    ativas.filter(matchesQ).forEach(v => {
+      const key = v.gbm || '(Sem local)';
+      if(!porLocal[key]) porLocal[key] = [];
+      porLocal[key].push(v);
+    });
 
-    document.querySelectorAll('[data-action="mudar"]').forEach(btn => {
-      btn.addEventListener('click', () => abrirModalMudarLocal(btn.dataset.prefixo));
+    // Ordem: whitelist primeiro, depois "Sem local" se houver
+    const ordem = [...LOCAIS];
+    if(porLocal['(Sem local)']) ordem.push('(Sem local)');
+
+    let html = '';
+
+    // Cards por local (ativos)
+    ordem.forEach(local => {
+      const lista = porLocal[local] || [];
+      // Se está buscando, esconde os cards vazios
+      if(q && lista.length === 0) return;
+      // Fora de busca, mostra todos os locais (mesmo vazios) para dar visão geral
+      html += htmlLocalCard(local, lista, '');
     });
-    document.querySelectorAll('[data-action="permutar"]').forEach(btn => {
-      btn.addEventListener('click', () => abrirModalPermutar(btn.dataset.prefixo, btn.dataset.origem, btn.dataset.gbm));
-    });
-    document.querySelectorAll('[data-action="baixar"]').forEach(btn => {
-      btn.addEventListener('click', () => abrirModalBaixar(btn.dataset.prefixo, btn.dataset.gbm, btn.dataset.origem));
-    });
-    document.querySelectorAll('[data-action="reativar"]').forEach(btn => {
-      btn.addEventListener('click', () => abrirModalReativar(btn.dataset.prefixo));
-    });
-    document.querySelectorAll('[data-action="moverReserva"]').forEach(btn => {
-      btn.addEventListener('click', () => abrirModalMoverReserva(btn.dataset.prefixo));
-    });
-  }catch(e){ console.error('renderGrid:', e); }
+
+    // Card DEMAN (reservas)
+    const reservasFiltradas = reservas.filter(matchesQ);
+    if(!q || reservasFiltradas.length > 0){
+      html += htmlLocalCard('DEMAN (Reservas)', reservasFiltradas, 'reserva');
+    }
+
+    if(html.trim() === ''){
+      container.innerHTML = '<div class="empty">Nenhuma viatura encontrada.</div>';
+      return;
+    }
+
+    container.innerHTML = html;
+    bindActions();
+  }catch(e){ console.error('renderLocalGrid:', e); }
+}
+
+// ==============================================
+// BIND DOS BOTÕES DE AÇÃO
+// ==============================================
+function bindActions(){
+  document.querySelectorAll('[data-action="mudar"]').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalMudarLocal(btn.dataset.prefixo));
+  });
+  document.querySelectorAll('[data-action="permutar"]').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalPermutar(btn.dataset.prefixo, btn.dataset.origem, btn.dataset.gbm));
+  });
+  document.querySelectorAll('[data-action="baixar"]').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalBaixar(btn.dataset.prefixo, btn.dataset.gbm, btn.dataset.origem));
+  });
+  document.querySelectorAll('[data-action="reativar"]').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalReativar(btn.dataset.prefixo));
+  });
+  document.querySelectorAll('[data-action="moverReserva"]').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalMoverReserva(btn.dataset.prefixo));
+  });
 }
 
 function render(){
   renderSummary();
   renderTabs();
-  renderGrid();
+  renderLocalGrid();
 }
 
 document.getElementById('search').addEventListener('input', render);
@@ -357,7 +438,6 @@ function abrirModal(titulo, camposHtml, onConfirm){
     confirm.textContent = 'Confirmar';
   }
   async function handler(){
-    // ✅ Proteção contra duplo clique
     if(confirm.disabled) return;
     confirm.disabled = true;
     confirm.textContent = 'Processando...';
@@ -405,7 +485,7 @@ function htmlOpcoesSubstituta(prefixoExcluido){
 }
 
 // ==============================================
-// MUDAR LOCAL
+// AÇÕES
 // ==============================================
 function abrirModalMudarLocal(prefixo){
   const v = VIATURAS.find(x => x.prefixo === prefixo);
@@ -431,13 +511,10 @@ function abrirModalMudarLocal(prefixo){
   });
 }
 
-// ==============================================
-// PERMUTAR
-// ==============================================
 function abrirModalPermutar(prefixo, origem, gbm){
   const destinoAPI = origem === 'ativa' ? 'reservas' : 'ativas';
   const destinoLabel = origem === 'ativa' ? 'DEMAN (Reserva)' : 'Ativa';
-  const titulo = origem === 'ativa' ? `Mover ${prefixo} para Reserva (DEMAN)` : `Mover ${prefixo} para Ativa`;
+  const titulo = origem === 'ativa' ? `Mover ${prefixo} para Reserva` : `Mover ${prefixo} para Ativa`;
 
   let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
     <b>${escapeHtml(prefixo)}</b> ${gbm ? `· ${escapeHtml(gbm)}` : ''} será movida para <b>${destinoLabel}</b>.
@@ -459,9 +536,6 @@ function abrirModalPermutar(prefixo, origem, gbm){
   });
 }
 
-// ==============================================
-// BAIXAR
-// ==============================================
 function abrirModalBaixar(prefixo, gbm, origem){
   let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
     Confirma o baixamento de <b>${escapeHtml(prefixo)}</b>${gbm ? ` (${escapeHtml(gbm)})` : ''}?
@@ -488,9 +562,6 @@ function abrirModalBaixar(prefixo, gbm, origem){
   });
 }
 
-// ==============================================
-// REATIVAR
-// ==============================================
 function abrirModalReativar(prefixo){
   const v = VIATURAS.find(x => x.prefixo === prefixo);
   if(!v) return;
@@ -515,9 +586,6 @@ function abrirModalReativar(prefixo){
   });
 }
 
-// ==============================================
-// MOVER BAIXADA PARA RESERVA
-// ==============================================
 function abrirModalMoverReserva(prefixo){
   abrirModal('Mover para Reserva · ' + prefixo, `
     <p style="font-size:13px;color:var(--text-dim);margin:0;">
@@ -531,9 +599,6 @@ function abrirModalMoverReserva(prefixo){
   });
 }
 
-// ==============================================
-// ADICIONAR
-// ==============================================
 document.getElementById('addBtn').addEventListener('click', () => {
   abrirModal('Nova Viatura', `
     <label>Prefixo
