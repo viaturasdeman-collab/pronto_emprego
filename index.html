@@ -49,7 +49,7 @@
   .tab{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;padding:8px 16px;border-radius:7px;cursor:pointer;color:var(--text-dim);border:none;background:transparent;white-space:nowrap;}
   .tab.active{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--border);}
   .right-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-  input[type=text]{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0;}
+  input[type=text]{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0;font-family:'Inter',sans-serif;}
   input:focus{outline:1px solid var(--amber);}
   .btn{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;padding:9px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);white-space:nowrap;}
   .btn:hover{border-color:var(--amber);}
@@ -350,7 +350,6 @@ function abrirModal(titulo, camposHtml, onConfirm){
   cancel.addEventListener('click', fechar);
 }
 
-// Gera <option> para todos os locais
 function htmlOpcoesLocais(selecionado){
   let html = '';
   LOCAIS.forEach(l => {
@@ -407,14 +406,16 @@ function abrirModalMudarLocal(prefixo){
 }
 
 // ==============================================
-// PERMUTAR
+// PERMUTAR (ativa ↔ reserva) — ✅ CORRIGIDO
 // ==============================================
 function abrirModalPermutar(prefixo, origem, gbm){
-  const destino = origem === 'ativa' ? 'reserva' : 'ativa';
+  // ✅ CORRIGIDO — envia no plural para o backend
+  const destinoAPI = origem === 'ativa' ? 'reservas' : 'ativas';
+  const destinoLabel = origem === 'ativa' ? 'DEMAN (Reserva)' : 'Ativa';
   const titulo = origem === 'ativa' ? `Mover ${prefixo} para Reserva (DEMAN)` : `Mover ${prefixo} para Ativa`;
 
   let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
-    <b>${escapeHtml(prefixo)}</b> ${gbm ? `· ${escapeHtml(gbm)}` : ''} será movida para <b>${destino === 'reserva' ? 'DEMAN (Reserva)' : 'Ativa'}</b>.
+    <b>${escapeHtml(prefixo)}</b> ${gbm ? `· ${escapeHtml(gbm)}` : ''} será movida para <b>${destinoLabel}</b>.
   </p>`;
 
   if(origem === 'ativa' && gbm){
@@ -426,7 +427,8 @@ function abrirModalPermutar(prefixo, origem, gbm){
   abrirModal(titulo, corpo, async () => {
     const sub = document.getElementById('modalSubstituto');
     const substituto = sub ? sub.value : '';
-    const r = await apiCall('permutarViatura', { prefixo, destino, substituto });
+    // ✅ Manda destinoAPI ('reservas' ou 'ativas')
+    const r = await apiCall('permutarViatura', { prefixo, destino: destinoAPI, substituto });
     if(!r.ok){ alert('Erro: ' + r.error); return false; }
     await loadData();
     return true;
