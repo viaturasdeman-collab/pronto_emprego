@@ -28,7 +28,7 @@
 
   .update-indicator{font-size:11px;color:var(--text-faint);text-align:right;margin-bottom:14px;}
 
-  /* ============ CARDS DE RESUMO (agora clicáveis) ============ */
+  /* ============ CARDS DE RESUMO (clicáveis) ============ */
   .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
   .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;
     cursor:pointer;transition:border-color .15s, background .15s, transform .12s;user-select:none;}
@@ -46,7 +46,6 @@
   .summary-card.reservas .value{color:var(--roxo);}
   .summary-card.baixadas .value{color:var(--vermelho);}
 
-  /* Estado ativo do filtro */
   .summary-card.active-filter{
     border-color:var(--amber);
     background:linear-gradient(135deg, rgba(232,169,58,.12), transparent);
@@ -58,17 +57,15 @@
   .summary-card.ativas.active-filter{border-color:var(--azul);background:linear-gradient(135deg, rgba(0,171,251,.12), transparent);}
   .summary-card.ativas.active-filter .label{color:var(--azul);}
   .summary-card.ativas.active-filter::after{color:var(--azul);}
-
   .summary-card.reservas.active-filter{border-color:var(--roxo);background:linear-gradient(135deg, rgba(177,140,255,.12), transparent);}
   .summary-card.reservas.active-filter .label{color:var(--roxo);}
   .summary-card.reservas.active-filter::after{color:var(--roxo);}
-
   .summary-card.baixadas.active-filter{border-color:var(--vermelho);background:linear-gradient(135deg, rgba(239,83,80,.12), transparent);}
   .summary-card.baixadas.active-filter .label{color:var(--vermelho);}
   .summary-card.baixadas.active-filter::after{color:var(--vermelho);}
 
   /* ============ TOOLBAR ============ */
-  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end;margin-bottom:16px;}
   .right-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   input[type=text]{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0;font-family:'Inter',sans-serif;}
   input:focus{outline:1px solid var(--amber);}
@@ -92,7 +89,6 @@
 
   .local-body{padding:6px 12px;flex:1;}
 
-  /* Linha de viatura — layout em duas linhas para dar espaço aos botões */
   .veh-row{display:flex;flex-direction:column;gap:8px;padding:12px 4px;border-bottom:1px solid rgba(48,58,71,.4);}
   .veh-row:last-child{border-bottom:none;}
 
@@ -102,8 +98,6 @@
 
   .veh-row-actions{display:flex;gap:6px;flex-wrap:wrap;}
   .veh-row-actions .btn{font-size:12px;padding:7px 12px;border-radius:6px;flex:1;min-width:0;text-align:center;}
-  .veh-row-actions .btn.wide{flex:1 1 100%;}
-  .veh-row-actions .btn.small{flex:0 0 auto;}
 
   .local-empty{font-size:12px;color:var(--text-faint);padding:20px;text-align:center;font-style:italic;}
 
@@ -151,7 +145,6 @@
     <div class="right-tools">
       <input type="text" id="search" placeholder="Buscar prefixo ou local">
       <button class="btn ghost" id="clearFilterBtn" style="display:none;">Limpar filtro</button>
-      <button class="btn" id="addBtn">+ Nova Viatura</button>
     </div>
   </div>
 
@@ -166,7 +159,7 @@ const USUARIO_ATUAL = 'Operador';
 
 let VIATURAS = [];
 let LOCAIS = [];
-let activeFilter = 'todas'; // 'todas' | 'ativas' | 'reservas' | 'baixadas'
+let activeFilter = 'todas';
 
 function normalizeStr(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
@@ -260,17 +253,14 @@ function renderSummary(){
         </div>`;
     }).join('');
 
-    // Listeners de filtro
     document.querySelectorAll('.summary-card').forEach(card => {
       card.addEventListener('click', () => {
         const key = card.dataset.filter;
-        // Clicar de novo no mesmo card → volta para "todas"
         activeFilter = (activeFilter === key) ? 'todas' : key;
         render();
       });
     });
 
-    // Botão "Limpar filtro"
     const clearBtn = document.getElementById('clearFilterBtn');
     if(clearBtn) clearBtn.style.display = (activeFilter === 'todas') ? 'none' : 'inline-block';
   }catch(e){ console.error('renderSummary:', e); }
@@ -285,7 +275,6 @@ document.getElementById('clearFilterBtn').addEventListener('click', () => {
 // LINHA DE VIATURA
 // ==============================================
 function htmlVehRow(v){
-  // Baixada — 2 botões
   if(v.origem === 'baixada'){
     return `
       <div class="veh-row">
@@ -302,7 +291,6 @@ function htmlVehRow(v){
       </div>`;
   }
 
-  // Reserva — 2 botões
   if(v.origem === 'reserva'){
     return `
       <div class="veh-row">
@@ -316,7 +304,6 @@ function htmlVehRow(v){
       </div>`;
   }
 
-  // Ativa — 3 botões (Mudar local / → Reserva / Baixar)
   return `
     <div class="veh-row">
       <div class="veh-row-top">
@@ -359,7 +346,6 @@ function renderLocalGrid(){
     const container = document.getElementById('localGrid');
     const matchesQ = v => !q || normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q);
 
-    // === FILTRO "BAIXADAS" ===
     if(activeFilter === 'baixadas'){
       let baixadas = VIATURAS.filter(v => v.origem === 'baixada').filter(matchesQ);
       if(baixadas.length === 0){
@@ -371,7 +357,6 @@ function renderLocalGrid(){
       return;
     }
 
-    // === FILTRO "RESERVAS" ===
     if(activeFilter === 'reservas'){
       let reservas = VIATURAS.filter(v => v.origem === 'reserva').filter(matchesQ);
       if(reservas.length === 0){
@@ -383,14 +368,12 @@ function renderLocalGrid(){
       return;
     }
 
-    // === FILTRO "ATIVAS" ===
     if(activeFilter === 'ativas'){
       const ativas = VIATURAS.filter(v => v.origem === 'ativa').filter(matchesQ);
       if(ativas.length === 0){
         container.innerHTML = '<div class="empty">Nenhuma viatura ativa.</div>';
         return;
       }
-      // Agrupa por local
       const porLocal = {};
       LOCAIS.forEach(l => porLocal[l] = []);
       ativas.forEach(v => {
@@ -411,7 +394,7 @@ function renderLocalGrid(){
       return;
     }
 
-    // === "TODAS" (padrão) — ativas agrupadas por local + DEMAN ===
+    // "TODAS" (padrão)
     const ativas = VIATURAS.filter(v => v.origem === 'ativa');
     const reservas = VIATURAS.filter(v => v.origem === 'reserva');
 
@@ -656,26 +639,6 @@ function abrirModalMoverReserva(prefixo){
     return true;
   });
 }
-
-document.getElementById('addBtn').addEventListener('click', () => {
-  abrirModal('Nova Viatura', `
-    <label>Prefixo
-      <input type="text" id="newPrefixo" placeholder="Ex: ABT-05" autofocus>
-    </label>
-    <label>Local
-      <select id="newGbm">${htmlOpcoesLocais('')}</select>
-    </label>
-  `, async () => {
-    const prefixo = document.getElementById('newPrefixo').value.trim();
-    const gbm = document.getElementById('newGbm').value;
-    if(!prefixo){ alert('Informe o prefixo.'); return false; }
-    if(!gbm){ alert('Selecione o local.'); return false; }
-    const r = await apiCall('adicionarViatura', { prefixo, gbm });
-    if(!r.ok){ alert('Erro: ' + r.error); return false; }
-    await loadData();
-    return true;
-  });
-});
 
 // ==============================================
 // INICIALIZAÇÃO
