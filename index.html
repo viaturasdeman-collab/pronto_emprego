@@ -28,9 +28,12 @@
 
   .update-indicator{font-size:11px;color:var(--text-faint);text-align:right;margin-bottom:14px;}
 
-  /* ============ CARDS DE RESUMO ============ */
+  /* ============ CARDS DE RESUMO (agora clicáveis) ============ */
   .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
-  .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
+  .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;
+    cursor:pointer;transition:border-color .15s, background .15s, transform .12s;user-select:none;}
+  .summary-card:hover{border-color:var(--amber);}
+  .summary-card:active{transform:scale(0.98);}
   .summary-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;}
   .summary-card.total::before{background:var(--amber);}
   .summary-card.ativas::before{background:var(--azul);}
@@ -43,11 +46,29 @@
   .summary-card.reservas .value{color:var(--roxo);}
   .summary-card.baixadas .value{color:var(--vermelho);}
 
+  /* Estado ativo do filtro */
+  .summary-card.active-filter{
+    border-color:var(--amber);
+    background:linear-gradient(135deg, rgba(232,169,58,.12), transparent);
+  }
+  .summary-card.active-filter .label{color:var(--amber);}
+  .summary-card.active-filter::after{
+    content:'✓';position:absolute;top:8px;right:10px;color:var(--amber);font-size:14px;font-weight:700;
+  }
+  .summary-card.ativas.active-filter{border-color:var(--azul);background:linear-gradient(135deg, rgba(0,171,251,.12), transparent);}
+  .summary-card.ativas.active-filter .label{color:var(--azul);}
+  .summary-card.ativas.active-filter::after{color:var(--azul);}
+
+  .summary-card.reservas.active-filter{border-color:var(--roxo);background:linear-gradient(135deg, rgba(177,140,255,.12), transparent);}
+  .summary-card.reservas.active-filter .label{color:var(--roxo);}
+  .summary-card.reservas.active-filter::after{color:var(--roxo);}
+
+  .summary-card.baixadas.active-filter{border-color:var(--vermelho);background:linear-gradient(135deg, rgba(239,83,80,.12), transparent);}
+  .summary-card.baixadas.active-filter .label{color:var(--vermelho);}
+  .summary-card.baixadas.active-filter::after{color:var(--vermelho);}
+
   /* ============ TOOLBAR ============ */
   .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;}
-  .tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;overflow-x:auto;}
-  .tab{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;padding:8px 16px;border-radius:7px;cursor:pointer;color:var(--text-dim);border:none;background:transparent;white-space:nowrap;}
-  .tab.active{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--border);}
   .right-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   input[type=text]{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0;font-family:'Inter',sans-serif;}
   input:focus{outline:1px solid var(--amber);}
@@ -58,7 +79,7 @@
   .btn.danger:hover{border-color:var(--vermelho);color:var(--vermelho);}
 
   /* ============ CARDS POR LOCAL ============ */
-  .local-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;}
+  .local-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px;}
   .local-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;}
   .local-card.reserva{border-color:rgba(177,140,255,.4);}
   .local-card.baixadas{border-color:rgba(239,83,80,.4);}
@@ -69,16 +90,20 @@
   .local-card.baixadas .local-name{color:var(--vermelho);}
   .local-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 10px;white-space:nowrap;}
 
-  .local-body{padding:6px 10px;flex:1;}
+  .local-body{padding:6px 12px;flex:1;}
 
-  /* Linha de viatura dentro do card */
-  .veh-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 6px;border-bottom:1px solid rgba(48,58,71,.4);}
+  /* Linha de viatura — layout em duas linhas para dar espaço aos botões */
+  .veh-row{display:flex;flex-direction:column;gap:8px;padding:12px 4px;border-bottom:1px solid rgba(48,58,71,.4);}
   .veh-row:last-child{border-bottom:none;}
-  .veh-row-left{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
-  .veh-row-prefix{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px;color:var(--text);}
-  .veh-row-info{font-size:10px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;overflow-wrap:break-word;}
-  .veh-row-actions{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;}
-  .veh-row-actions .btn{font-size:11px;padding:5px 9px;border-radius:6px;}
+
+  .veh-row-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .veh-row-prefix{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:18px;color:var(--text);}
+  .veh-row-info{font-size:10px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;text-align:right;}
+
+  .veh-row-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .veh-row-actions .btn{font-size:12px;padding:7px 12px;border-radius:6px;flex:1;min-width:0;text-align:center;}
+  .veh-row-actions .btn.wide{flex:1 1 100%;}
+  .veh-row-actions .btn.small{flex:0 0 auto;}
 
   .local-empty{font-size:12px;color:var(--text-faint);padding:20px;text-align:center;font-style:italic;}
 
@@ -123,9 +148,9 @@
   <div class="summary" id="summaryCards"></div>
 
   <div class="toolbar">
-    <div class="tabs" id="tabsContainer"></div>
     <div class="right-tools">
       <input type="text" id="search" placeholder="Buscar prefixo ou local">
+      <button class="btn ghost" id="clearFilterBtn" style="display:none;">Limpar filtro</button>
       <button class="btn" id="addBtn">+ Nova Viatura</button>
     </div>
   </div>
@@ -141,7 +166,7 @@ const USUARIO_ATUAL = 'Operador';
 
 let VIATURAS = [];
 let LOCAIS = [];
-let activeTab = 'todas';
+let activeFilter = 'todas'; // 'todas' | 'ativas' | 'reservas' | 'baixadas'
 
 function normalizeStr(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
@@ -210,7 +235,7 @@ async function loadData(){
 }
 
 // ==============================================
-// RESUMO
+// RESUMO (cards como filtros)
 // ==============================================
 function renderSummary(){
   try{
@@ -219,53 +244,57 @@ function renderSummary(){
     const reservas = VIATURAS.filter(v => v.origem === 'reserva').length;
     const baixadas = VIATURAS.filter(v => v.origem === 'baixada').length;
 
-    document.getElementById('summaryCards').innerHTML = `
-      <div class="summary-card total">
-        <div class="label">Total geral</div>
-        <div class="value">${total}</div>
-      </div>
-      <div class="summary-card ativas">
-        <div class="label">Ativas</div>
-        <div class="value">${ativas}</div>
-      </div>
-      <div class="summary-card reservas">
-        <div class="label">Reservas (DEMAN)</div>
-        <div class="value">${reservas}</div>
-      </div>
-      <div class="summary-card baixadas">
-        <div class="label">Baixadas</div>
-        <div class="value">${baixadas}</div>
-      </div>`;
+    const cards = [
+      { key: 'todas',    label: 'Total geral',     value: total,    cls: 'total' },
+      { key: 'ativas',   label: 'Ativas',          value: ativas,   cls: 'ativas' },
+      { key: 'reservas', label: 'Reservas (DEMAN)',value: reservas, cls: 'reservas' },
+      { key: 'baixadas', label: 'Baixadas',        value: baixadas, cls: 'baixadas' }
+    ];
+
+    document.getElementById('summaryCards').innerHTML = cards.map(c => {
+      const active = activeFilter === c.key;
+      return `
+        <div class="summary-card ${c.cls} ${active ? 'active-filter' : ''}" data-filter="${c.key}">
+          <div class="label">${c.label}</div>
+          <div class="value">${c.value}</div>
+        </div>`;
+    }).join('');
+
+    // Listeners de filtro
+    document.querySelectorAll('.summary-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const key = card.dataset.filter;
+        // Clicar de novo no mesmo card → volta para "todas"
+        activeFilter = (activeFilter === key) ? 'todas' : key;
+        render();
+      });
+    });
+
+    // Botão "Limpar filtro"
+    const clearBtn = document.getElementById('clearFilterBtn');
+    if(clearBtn) clearBtn.style.display = (activeFilter === 'todas') ? 'none' : 'inline-block';
   }catch(e){ console.error('renderSummary:', e); }
 }
 
-// ==============================================
-// ABAS
-// ==============================================
-function renderTabs(){
-  try{
-    const container = document.getElementById('tabsContainer');
-    let html = `<button class="tab ${activeTab==='todas'?'active':''}" data-tab="todas">Todas</button>`;
-    html += `<button class="tab ${activeTab==='baixadas'?'active':''}" data-tab="baixadas">Baixadas</button>`;
-    container.innerHTML = html;
-    container.querySelectorAll('.tab').forEach(t => {
-      t.addEventListener('click', () => { activeTab = t.dataset.tab; render(); });
-    });
-  }catch(e){ console.error('renderTabs:', e); }
-}
+document.getElementById('clearFilterBtn').addEventListener('click', () => {
+  activeFilter = 'todas';
+  render();
+});
 
 // ==============================================
-// LINHA DE VIATURA (dentro de um card de local)
+// LINHA DE VIATURA
 // ==============================================
 function htmlVehRow(v){
+  // Baixada — 2 botões
   if(v.origem === 'baixada'){
     return `
       <div class="veh-row">
-        <div class="veh-row-left">
+        <div class="veh-row-top">
           <span class="veh-row-prefix">${escapeHtml(v.prefixo)}</span>
-          ${v.motivo ? `<span class="veh-row-info">Motivo: ${escapeHtml(v.motivo)}</span>` : ''}
-          ${v.data ? `<span class="veh-row-info">${escapeHtml(v.data)}</span>` : ''}
+          ${v.gbm ? `<span class="veh-row-info">Era ${escapeHtml(v.gbm)}</span>` : ''}
         </div>
+        ${v.motivo ? `<div class="veh-row-info" style="text-align:left;">Motivo: ${escapeHtml(v.motivo)}</div>` : ''}
+        ${v.data ? `<div class="veh-row-info" style="text-align:left;">${escapeHtml(v.data)}</div>` : ''}
         <div class="veh-row-actions">
           <button class="btn ghost" data-action="reativar" data-prefixo="${escapeAttr(v.prefixo)}">Reativar</button>
           <button class="btn ghost" data-action="moverReserva" data-prefixo="${escapeAttr(v.prefixo)}">→ Reserva</button>
@@ -273,10 +302,11 @@ function htmlVehRow(v){
       </div>`;
   }
 
+  // Reserva — 2 botões
   if(v.origem === 'reserva'){
     return `
       <div class="veh-row">
-        <div class="veh-row-left">
+        <div class="veh-row-top">
           <span class="veh-row-prefix">${escapeHtml(v.prefixo)}</span>
         </div>
         <div class="veh-row-actions">
@@ -286,15 +316,15 @@ function htmlVehRow(v){
       </div>`;
   }
 
-  // Ativa
+  // Ativa — 3 botões (Mudar local / → Reserva / Baixar)
   return `
     <div class="veh-row">
-      <div class="veh-row-left">
+      <div class="veh-row-top">
         <span class="veh-row-prefix">${escapeHtml(v.prefixo)}</span>
       </div>
       <div class="veh-row-actions">
-        <button class="btn ghost" data-action="mudar" data-prefixo="${escapeAttr(v.prefixo)}">Mudar</button>
-        <button class="btn ghost" data-action="permutar" data-prefixo="${escapeAttr(v.prefixo)}" data-origem="ativa" data-gbm="${escapeAttr(v.gbm||'')}">→ Res</button>
+        <button class="btn ghost" data-action="mudar" data-prefixo="${escapeAttr(v.prefixo)}">Mudar local</button>
+        <button class="btn ghost" data-action="permutar" data-prefixo="${escapeAttr(v.prefixo)}" data-origem="ativa" data-gbm="${escapeAttr(v.gbm||'')}">→ Reserva</button>
         <button class="btn ghost danger" data-action="baixar" data-prefixo="${escapeAttr(v.prefixo)}" data-gbm="${escapeAttr(v.gbm||'')}" data-origem="ativa">Baixar</button>
       </div>
     </div>`;
@@ -321,18 +351,17 @@ function htmlLocalCard(nome, viaturas, tipo){
 }
 
 // ==============================================
-// GRID PRINCIPAL — agrupado por LOCAL
+// GRID PRINCIPAL — filtrado por activeFilter
 // ==============================================
 function renderLocalGrid(){
   try{
     const q = normalizeStr(document.getElementById('search').value);
     const container = document.getElementById('localGrid');
+    const matchesQ = v => !q || normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q);
 
-    // Modo "Baixadas"
-    if(activeTab === 'baixadas'){
-      let baixadas = VIATURAS.filter(v => v.origem === 'baixada');
-      if(q) baixadas = baixadas.filter(v => normalizeStr(v.prefixo).includes(q) || normalizeStr(v.motivo).includes(q));
-
+    // === FILTRO "BAIXADAS" ===
+    if(activeFilter === 'baixadas'){
+      let baixadas = VIATURAS.filter(v => v.origem === 'baixada').filter(matchesQ);
       if(baixadas.length === 0){
         container.innerHTML = '<div class="empty">Nenhuma viatura baixada.</div>';
         return;
@@ -342,14 +371,50 @@ function renderLocalGrid(){
       return;
     }
 
-    // Modo "Todas" — agrupa ativas por local + DEMAN (reservas)
+    // === FILTRO "RESERVAS" ===
+    if(activeFilter === 'reservas'){
+      let reservas = VIATURAS.filter(v => v.origem === 'reserva').filter(matchesQ);
+      if(reservas.length === 0){
+        container.innerHTML = '<div class="empty">Nenhuma viatura em reserva (DEMAN).</div>';
+        return;
+      }
+      container.innerHTML = htmlLocalCard('DEMAN (Reservas)', reservas, 'reserva');
+      bindActions();
+      return;
+    }
+
+    // === FILTRO "ATIVAS" ===
+    if(activeFilter === 'ativas'){
+      const ativas = VIATURAS.filter(v => v.origem === 'ativa').filter(matchesQ);
+      if(ativas.length === 0){
+        container.innerHTML = '<div class="empty">Nenhuma viatura ativa.</div>';
+        return;
+      }
+      // Agrupa por local
+      const porLocal = {};
+      LOCAIS.forEach(l => porLocal[l] = []);
+      ativas.forEach(v => {
+        const key = v.gbm || '(Sem local)';
+        if(!porLocal[key]) porLocal[key] = [];
+        porLocal[key].push(v);
+      });
+      const ordem = [...LOCAIS];
+      if(porLocal['(Sem local)']) ordem.push('(Sem local)');
+      let html = '';
+      ordem.forEach(local => {
+        const lista = porLocal[local] || [];
+        if(q && lista.length === 0) return;
+        html += htmlLocalCard(local, lista, '');
+      });
+      container.innerHTML = html;
+      bindActions();
+      return;
+    }
+
+    // === "TODAS" (padrão) — ativas agrupadas por local + DEMAN ===
     const ativas = VIATURAS.filter(v => v.origem === 'ativa');
     const reservas = VIATURAS.filter(v => v.origem === 'reserva');
 
-    // Filtro de busca
-    const matchesQ = v => !q || normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q);
-
-    // Monta agrupamento por local (respeitando a ordem da whitelist)
     const porLocal = {};
     LOCAIS.forEach(l => porLocal[l] = []);
     ativas.filter(matchesQ).forEach(v => {
@@ -358,22 +423,16 @@ function renderLocalGrid(){
       porLocal[key].push(v);
     });
 
-    // Ordem: whitelist primeiro, depois "Sem local" se houver
     const ordem = [...LOCAIS];
     if(porLocal['(Sem local)']) ordem.push('(Sem local)');
 
     let html = '';
-
-    // Cards por local (ativos)
     ordem.forEach(local => {
       const lista = porLocal[local] || [];
-      // Se está buscando, esconde os cards vazios
       if(q && lista.length === 0) return;
-      // Fora de busca, mostra todos os locais (mesmo vazios) para dar visão geral
       html += htmlLocalCard(local, lista, '');
     });
 
-    // Card DEMAN (reservas)
     const reservasFiltradas = reservas.filter(matchesQ);
     if(!q || reservasFiltradas.length > 0){
       html += htmlLocalCard('DEMAN (Reservas)', reservasFiltradas, 'reserva');
@@ -412,7 +471,6 @@ function bindActions(){
 
 function render(){
   renderSummary();
-  renderTabs();
   renderLocalGrid();
 }
 
