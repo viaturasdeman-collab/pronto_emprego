@@ -17,7 +17,6 @@
   body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
   .wrap{max-width:1400px;margin:0 auto;padding:20px 18px 60px;}
 
-  /* ============ HEADER ============ */
   header{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;
     padding:20px 22px;background:linear-gradient(135deg,var(--bg-elev),var(--surface));
     border:1px solid var(--border);border-radius:14px;margin-bottom:18px;position:relative;overflow:hidden;}
@@ -28,7 +27,6 @@
 
   .update-indicator{font-size:11px;color:var(--text-faint);text-align:right;margin-bottom:14px;}
 
-  /* ============ CARDS DE RESUMO (clicáveis) ============ */
   .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
   .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;
     cursor:pointer;transition:border-color .15s, background .15s, transform .12s;user-select:none;}
@@ -64,7 +62,6 @@
   .summary-card.baixadas.active-filter .label{color:var(--vermelho);}
   .summary-card.baixadas.active-filter::after{color:var(--vermelho);}
 
-  /* ============ TOOLBAR ============ */
   .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end;margin-bottom:16px;}
   .right-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   input[type=text]{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0;font-family:'Inter',sans-serif;}
@@ -75,7 +72,6 @@
   .btn.ghost{background:transparent;}
   .btn.danger:hover{border-color:var(--vermelho);color:var(--vermelho);}
 
-  /* ============ CARDS POR LOCAL ============ */
   .local-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px;}
   .local-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;}
   .local-card.reserva{border-color:rgba(177,140,255,.4);}
@@ -101,7 +97,6 @@
 
   .local-empty{font-size:12px;color:var(--text-faint);padding:20px;text-align:center;font-style:italic;}
 
-  /* ============ MODAL ============ */
   .modal-overlay{position:fixed;inset:0;background:rgba(16,20,26,.85);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;}
   .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:90vh;overflow-y:auto;}
   .modal-box h2{font-family:'Rajdhani',sans-serif;font-size:20px;margin:0;color:var(--amber);}
@@ -156,6 +151,9 @@
 <script>
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTBLYK1DGYKjndJZYt2mm03aLiuwyamzc4s2dDsYY_YJpj3fh0CaptQGG1hMReJhqG/exec';
 const USUARIO_ATUAL = 'Operador';
+
+// Motivos predefinidos para baixa
+const MOTIVOS_BAIXA = ['Sinistro', 'Manutenção'];
 
 let VIATURAS = [];
 let LOCAIS = [];
@@ -228,7 +226,7 @@ async function loadData(){
 }
 
 // ==============================================
-// RESUMO (cards como filtros)
+// RESUMO
 // ==============================================
 function renderSummary(){
   try{
@@ -338,7 +336,7 @@ function htmlLocalCard(nome, viaturas, tipo){
 }
 
 // ==============================================
-// GRID PRINCIPAL — filtrado por activeFilter
+// GRID PRINCIPAL
 // ==============================================
 function renderLocalGrid(){
   try{
@@ -346,7 +344,6 @@ function renderLocalGrid(){
     const container = document.getElementById('localGrid');
     const matchesQ = v => !q || normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q);
 
-    // === FILTRO "BAIXADAS" ===
     if(activeFilter === 'baixadas'){
       let baixadas = VIATURAS.filter(v => v.origem === 'baixada').filter(matchesQ);
       if(baixadas.length === 0){
@@ -358,7 +355,6 @@ function renderLocalGrid(){
       return;
     }
 
-    // === FILTRO "RESERVAS" ===
     if(activeFilter === 'reservas'){
       let reservas = VIATURAS.filter(v => v.origem === 'reserva').filter(matchesQ);
       if(reservas.length === 0){
@@ -370,7 +366,6 @@ function renderLocalGrid(){
       return;
     }
 
-    // === FILTRO "ATIVAS" ===
     if(activeFilter === 'ativas'){
       const ativas = VIATURAS.filter(v => v.origem === 'ativa').filter(matchesQ);
       if(ativas.length === 0){
@@ -397,7 +392,7 @@ function renderLocalGrid(){
       return;
     }
 
-    // === "TODAS" (padrão) — só ativas agrupadas por local, SEM DEMAN ===
+    // "TODAS" — só ativas, sem DEMAN
     const ativas = VIATURAS.filter(v => v.origem === 'ativa');
 
     const porLocal = {};
@@ -503,6 +498,14 @@ function htmlOpcoesLocais(selecionado){
   return html;
 }
 
+function htmlOpcoesMotivo(){
+  let html = '';
+  MOTIVOS_BAIXA.forEach(m => {
+    html += `<option value="${escapeAttr(m)}">${escapeHtml(m)}</option>`;
+  });
+  return html;
+}
+
 function htmlOpcoesSubstituta(prefixoExcluido){
   const outras = VIATURAS.filter(v => v.prefixo !== prefixoExcluido && v.origem !== 'baixada');
   if(outras.length === 0) return `<option value="">— Nenhuma outra viatura disponível —</option>`;
@@ -574,12 +577,15 @@ function abrirModalPermutar(prefixo, origem, gbm){
   });
 }
 
+// ==============================================
+// BAIXAR (com motivo predefinido)
+// ==============================================
 function abrirModalBaixar(prefixo, gbm, origem){
   let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
     Confirma o baixamento de <b>${escapeHtml(prefixo)}</b>${gbm ? ` (${escapeHtml(gbm)})` : ''}?
   </p>
   <label>Motivo
-    <input type="text" id="modalMotivo" placeholder="Ex: manutenção preventiva" autofocus>
+    <select id="modalMotivo" autofocus>${htmlOpcoesMotivo()}</select>
   </label>`;
 
   if(origem === 'ativa' && gbm){
@@ -589,8 +595,8 @@ function abrirModalBaixar(prefixo, gbm, origem){
   }
 
   abrirModal('Baixar viatura · ' + prefixo, corpo, async () => {
-    const motivo = document.getElementById('modalMotivo').value.trim();
-    if(!motivo){ alert('Informe o motivo.'); return false; }
+    const motivo = document.getElementById('modalMotivo').value;
+    if(!motivo){ alert('Selecione o motivo.'); return false; }
     const sub = document.getElementById('modalSubstituto');
     const substituto = sub ? sub.value : '';
     const r = await apiCall('baixarViatura', { prefixo, motivo, substituto });
