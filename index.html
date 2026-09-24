@@ -346,6 +346,7 @@ function renderLocalGrid(){
     const container = document.getElementById('localGrid');
     const matchesQ = v => !q || normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q);
 
+    // === FILTRO "BAIXADAS" ===
     if(activeFilter === 'baixadas'){
       let baixadas = VIATURAS.filter(v => v.origem === 'baixada').filter(matchesQ);
       if(baixadas.length === 0){
@@ -357,6 +358,7 @@ function renderLocalGrid(){
       return;
     }
 
+    // === FILTRO "RESERVAS" ===
     if(activeFilter === 'reservas'){
       let reservas = VIATURAS.filter(v => v.origem === 'reserva').filter(matchesQ);
       if(reservas.length === 0){
@@ -368,6 +370,7 @@ function renderLocalGrid(){
       return;
     }
 
+    // === FILTRO "ATIVAS" ===
     if(activeFilter === 'ativas'){
       const ativas = VIATURAS.filter(v => v.origem === 'ativa').filter(matchesQ);
       if(ativas.length === 0){
@@ -394,9 +397,8 @@ function renderLocalGrid(){
       return;
     }
 
-    // "TODAS" (padrão)
+    // === "TODAS" (padrão) — só ativas agrupadas por local, SEM DEMAN ===
     const ativas = VIATURAS.filter(v => v.origem === 'ativa');
-    const reservas = VIATURAS.filter(v => v.origem === 'reserva');
 
     const porLocal = {};
     LOCAIS.forEach(l => porLocal[l] = []);
@@ -415,11 +417,6 @@ function renderLocalGrid(){
       if(q && lista.length === 0) return;
       html += htmlLocalCard(local, lista, '');
     });
-
-    const reservasFiltradas = reservas.filter(matchesQ);
-    if(!q || reservasFiltradas.length > 0){
-      html += htmlLocalCard('DEMAN (Reservas)', reservasFiltradas, 'reserva');
-    }
 
     if(html.trim() === ''){
       container.innerHTML = '<div class="empty">Nenhuma viatura encontrada.</div>';
