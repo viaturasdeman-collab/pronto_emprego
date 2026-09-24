@@ -392,7 +392,6 @@ function renderLocalGrid(){
       return;
     }
 
-    // "TODAS" — só ativas, sem DEMAN
     const ativas = VIATURAS.filter(v => v.origem === 'ativa');
 
     const porLocal = {};
@@ -552,15 +551,26 @@ function abrirModalMudarLocal(prefixo){
   });
 }
 
+// ==============================================
+// PERMUTAR — com select de local quando → Ativa
+// ==============================================
 function abrirModalPermutar(prefixo, origem, gbm){
   const destinoAPI = origem === 'ativa' ? 'reservas' : 'ativas';
   const destinoLabel = origem === 'ativa' ? 'DEMAN (Reserva)' : 'Ativa';
-  const titulo = origem === 'ativa' ? `Mover ${prefixo} para Reserva` : `Mover ${prefixo} para Ativa`;
+  const titulo = origem === 'ativa' ? `Mover ${prefixo} para Reserva` : `Ativar ${prefixo}`;
 
   let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
     <b>${escapeHtml(prefixo)}</b> ${gbm ? `· ${escapeHtml(gbm)}` : ''} será movida para <b>${destinoLabel}</b>.
   </p>`;
 
+  // ✅ Se está indo para ATIVA (vem da reserva), mostra select de local
+  if(origem === 'reserva'){
+    corpo += `<label>Local de destino
+      <select id="modalNovoGbm" autofocus>${htmlOpcoesLocais('')}</select>
+    </label>`;
+  }
+
+  // Se está saindo de ativa, mostra select de substituta
   if(origem === 'ativa' && gbm){
     corpo += `<label>Viatura substituta em ${escapeHtml(gbm)} (opcional)
       <select id="modalSubstituto">${htmlOpcoesSubstituta(prefixo)}</select>
@@ -570,7 +580,22 @@ function abrirModalPermutar(prefixo, origem, gbm){
   abrirModal(titulo, corpo, async () => {
     const sub = document.getElementById('modalSubstituto');
     const substituto = sub ? sub.value : '';
-    const r = await apiCall('permutarViatura', { prefixo, destino: destinoAPI, substituto });
+
+    // ✅ Pega o GBM escolhido (só existe quando origem = reserva)
+    const gbmSel = document.getElementById('modalNovoGbm');
+    const novoGbm = gbmSel ? gbmSel.value : '';
+
+    if(origem === 'reserva' && !novoGbm){
+      alert('Selecione o local de destino.');
+      return false;
+    }
+
+    const r = await apiCall('permutarViatura', {
+      prefixo,
+      destino: destinoAPI,
+      substituto,
+      novoGbm
+    });
     if(!r.ok){ alert('Erro: ' + r.error); return false; }
     await loadData();
     return true;
@@ -578,7 +603,7 @@ function abrirModalPermutar(prefixo, origem, gbm){
 }
 
 // ==============================================
-// BAIXAR (com motivo predefinido)
+// BAIXAR (motivo predefinido)
 // ==============================================
 function abrirModalBaixar(prefixo, gbm, origem){
   let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
