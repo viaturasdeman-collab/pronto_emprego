@@ -17,6 +17,28 @@
   body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
   .wrap{max-width:1400px;margin:0 auto;padding:20px 18px 60px;}
 
+  /* ============ LOGIN ============ */
+  .login-overlay{
+    position:fixed;inset:0;background:rgba(16,20,26,.97);
+    display:flex;align-items:center;justify-content:center;z-index:9999;
+  }
+  .login-box{
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:26px 24px;width:340px;display:flex;flex-direction:column;gap:12px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .login-box h2{font-family:'Rajdhani',sans-serif;font-size:22px;margin:0 0 4px;letter-spacing:.02em;}
+  .login-box p.sub{font-size:12px;color:var(--text-dim);margin:0 0 8px;}
+  .login-box input{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:14px;
+  }
+  .login-box input:focus{outline:1px solid var(--amber);}
+  .login-box .btn{width:100%;justify-content:center;padding:11px;font-size:15px;}
+  .login-error{color:var(--vermelho);font-size:12px;text-align:center;display:none;}
+  .login-footer{font-size:10.5px;color:var(--text-faint);text-align:center;margin-top:6px;}
+
+  /* ============ HEADER ============ */
   header{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;
     padding:20px 22px;background:linear-gradient(135deg,var(--bg-elev),var(--surface));
     border:1px solid var(--border);border-radius:14px;margin-bottom:18px;position:relative;overflow:hidden;}
@@ -24,6 +46,15 @@
   .htitle{display:flex;flex-direction:column;gap:2px;}
   .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--amber);text-transform:uppercase;}
   h1{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:26px;margin:0;}
+  .user-area{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-dim);}
+  .user-area .who{font-family:'IBM Plex Mono',monospace;}
+  .user-area .who b{color:var(--amber);}
+  .user-area .badge-perfil{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;border-radius:12px;
+    border:1px solid var(--border);white-space:nowrap;
+  }
+  .user-area .badge-perfil.admin{background:rgba(232,169,58,.15);color:var(--amber);border-color:var(--amber);}
+  .user-area .badge-perfil.visualizar{background:rgba(147,160,176,.15);color:var(--text-dim);border-color:var(--border);}
 
   .update-indicator{font-size:11px;color:var(--text-faint);text-align:right;margin-bottom:14px;}
 
@@ -112,6 +143,24 @@
 </head>
 <body>
 
+<!-- ============================================ -->
+<!-- LOGIN OVERLAY                                -->
+<!-- ============================================ -->
+<div id="loginOverlay" class="login-overlay" style="display:none;">
+  <div class="login-box">
+    <h2>DEMAN · Acesso</h2>
+    <p class="sub">Entre com suas credenciais para continuar.</p>
+    <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password">
+    <p id="loginError" class="login-error">Usuário ou senha inválidos.</p>
+    <button class="btn primary" id="loginBtn">Entrar</button>
+    <div class="login-footer">Uso interno · Registro de auditoria ativo</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL DE AÇÃO                                -->
+<!-- ============================================ -->
 <div id="actionModal" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h2 id="modalTitle">Ação</h2>
@@ -129,6 +178,11 @@
     <div class="htitle">
       <div class="eyebrow">DEMAN · Gestão de Viaturas</div>
       <h1>Painel de Viaturas por Local</h1>
+    </div>
+    <div class="user-area">
+      <span class="who">Logado como <b id="currentUserName">—</b></span>
+      <span class="badge-perfil" id="currentUserPerfil" style="display:none;"></span>
+      <button class="btn ghost" id="logoutBtn">Sair</button>
     </div>
   </header>
 
@@ -150,7 +204,13 @@
 
 <script>
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTBLYK1DGYKjndJZYt2mm03aLiuwyamzc4s2dDsYY_YJpj3fh0CaptQGG1hMReJhqG/exec';
-const USUARIO_ATUAL = 'Operador';
+
+// ✅ Usuários autorizados
+// perfil: 'admin' = faz tudo | 'visualizar' = só vê
+const USERS = {
+  'deman':    { senha: 'deman2026',  nome: 'DEMAN',    perfil: 'admin'      },
+  'operador': { senha: 'bamex2026',  nome: 'OPERADOR', perfil: 'visualizar' }
+};
 
 // Motivos predefinidos para baixa
 const MOTIVOS_BAIXA = ['Sinistro', 'Manutenção'];
@@ -159,9 +219,57 @@ let VIATURAS = [];
 let LOCAIS = [];
 let activeFilter = 'todas';
 
+// ✅ Estado do usuário logado
+let USUARIO_ATUAL = '';
+let PERFIL_ATUAL = 'visualizar';
+
+function isAdmin(){ return PERFIL_ATUAL === 'admin'; }
+
 function normalizeStr(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+// ==============================================
+// AUTENTICAÇÃO
+// ==============================================
+function showLogin(){
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('loginUser').focus();
+}
+function hideLogin(){
+  document.getElementById('loginOverlay').style.display = 'none';
+}
+
+function handleLogin(){
+  const u = document.getElementById('loginUser').value.trim().toLowerCase();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+
+  const acc = USERS[u];
+  if(acc && acc.senha === p){
+    sessionStorage.setItem('deman_auth', 'ok');
+    sessionStorage.setItem('deman_user_nome', acc.nome);
+    sessionStorage.setItem('deman_user_perfil', acc.perfil);
+    USUARIO_ATUAL = acc.nome;
+    PERFIL_ATUAL = acc.perfil;
+    err.style.display = 'none';
+    startApp();
+  } else {
+    err.style.display = 'block';
+  }
+}
+
+function handleLogout(){
+  sessionStorage.removeItem('deman_auth');
+  sessionStorage.removeItem('deman_user_nome');
+  sessionStorage.removeItem('deman_user_perfil');
+  location.reload();
+}
+
+document.getElementById('loginBtn').addEventListener('click', handleLogin);
+document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key === 'Enter') handleLogin(); });
+document.getElementById('loginUser').addEventListener('keydown', e => { if(e.key === 'Enter') document.getElementById('loginPass').focus(); });
+document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
 // ==============================================
 // API
@@ -273,6 +381,8 @@ document.getElementById('clearFilterBtn').addEventListener('click', () => {
 // LINHA DE VIATURA
 // ==============================================
 function htmlVehRow(v){
+  const admin = isAdmin();
+
   if(v.origem === 'baixada'){
     return `
       <div class="veh-row">
@@ -282,10 +392,11 @@ function htmlVehRow(v){
         </div>
         ${v.motivo ? `<div class="veh-row-info" style="text-align:left;">Motivo: ${escapeHtml(v.motivo)}</div>` : ''}
         ${v.data ? `<div class="veh-row-info" style="text-align:left;">${escapeHtml(v.data)}</div>` : ''}
+        ${admin ? `
         <div class="veh-row-actions">
           <button class="btn ghost" data-action="reativar" data-prefixo="${escapeAttr(v.prefixo)}">Reativar</button>
           <button class="btn ghost" data-action="moverReserva" data-prefixo="${escapeAttr(v.prefixo)}">→ Reserva</button>
-        </div>
+        </div>` : ''}
       </div>`;
   }
 
@@ -295,10 +406,11 @@ function htmlVehRow(v){
         <div class="veh-row-top">
           <span class="veh-row-prefix">${escapeHtml(v.prefixo)}</span>
         </div>
+        ${admin ? `
         <div class="veh-row-actions">
           <button class="btn ghost" data-action="permutar" data-prefixo="${escapeAttr(v.prefixo)}" data-origem="reserva" data-gbm="">→ Ativa</button>
           <button class="btn ghost danger" data-action="baixar" data-prefixo="${escapeAttr(v.prefixo)}" data-gbm="" data-origem="reserva">Baixar</button>
-        </div>
+        </div>` : ''}
       </div>`;
   }
 
@@ -307,11 +419,12 @@ function htmlVehRow(v){
       <div class="veh-row-top">
         <span class="veh-row-prefix">${escapeHtml(v.prefixo)}</span>
       </div>
+      ${admin ? `
       <div class="veh-row-actions">
         <button class="btn ghost" data-action="mudar" data-prefixo="${escapeAttr(v.prefixo)}">Mudar local</button>
         <button class="btn ghost" data-action="permutar" data-prefixo="${escapeAttr(v.prefixo)}" data-origem="ativa" data-gbm="${escapeAttr(v.gbm||'')}">→ Reserva</button>
         <button class="btn ghost danger" data-action="baixar" data-prefixo="${escapeAttr(v.prefixo)}" data-gbm="${escapeAttr(v.gbm||'')}" data-origem="ativa">Baixar</button>
-      </div>
+      </div>` : ''}
     </div>`;
 }
 
@@ -426,6 +539,9 @@ function renderLocalGrid(){
 // BIND DOS BOTÕES DE AÇÃO
 // ==============================================
 function bindActions(){
+  // Se não é admin, nem precisa bindar (não existem botões)
+  if(!isAdmin()) return;
+
   document.querySelectorAll('[data-action="mudar"]').forEach(btn => {
     btn.addEventListener('click', () => abrirModalMudarLocal(btn.dataset.prefixo));
   });
@@ -454,6 +570,8 @@ document.getElementById('search').addEventListener('input', render);
 // MODAL GENÉRICO
 // ==============================================
 function abrirModal(titulo, camposHtml, onConfirm){
+  if(!isAdmin()){ alert('Acesso negado.'); return; }
+
   document.getElementById('modalTitle').textContent = titulo;
   document.getElementById('modalFields').innerHTML = camposHtml;
   const modal = document.getElementById('actionModal');
@@ -551,9 +669,6 @@ function abrirModalMudarLocal(prefixo){
   });
 }
 
-// ==============================================
-// PERMUTAR — com select de local quando → Ativa
-// ==============================================
 function abrirModalPermutar(prefixo, origem, gbm){
   const destinoAPI = origem === 'ativa' ? 'reservas' : 'ativas';
   const destinoLabel = origem === 'ativa' ? 'DEMAN (Reserva)' : 'Ativa';
@@ -563,14 +678,12 @@ function abrirModalPermutar(prefixo, origem, gbm){
     <b>${escapeHtml(prefixo)}</b> ${gbm ? `· ${escapeHtml(gbm)}` : ''} será movida para <b>${destinoLabel}</b>.
   </p>`;
 
-  // ✅ Se está indo para ATIVA (vem da reserva), mostra select de local
   if(origem === 'reserva'){
     corpo += `<label>Local de destino
       <select id="modalNovoGbm" autofocus>${htmlOpcoesLocais('')}</select>
     </label>`;
   }
 
-  // Se está saindo de ativa, mostra select de substituta
   if(origem === 'ativa' && gbm){
     corpo += `<label>Viatura substituta em ${escapeHtml(gbm)} (opcional)
       <select id="modalSubstituto">${htmlOpcoesSubstituta(prefixo)}</select>
@@ -581,7 +694,6 @@ function abrirModalPermutar(prefixo, origem, gbm){
     const sub = document.getElementById('modalSubstituto');
     const substituto = sub ? sub.value : '';
 
-    // ✅ Pega o GBM escolhido (só existe quando origem = reserva)
     const gbmSel = document.getElementById('modalNovoGbm');
     const novoGbm = gbmSel ? gbmSel.value : '';
 
@@ -602,9 +714,6 @@ function abrirModalPermutar(prefixo, origem, gbm){
   });
 }
 
-// ==============================================
-// BAIXAR (motivo predefinido)
-// ==============================================
 function abrirModalBaixar(prefixo, gbm, origem){
   let corpo = `<p style="font-size:13px;color:var(--text-dim);margin:0;">
     Confirma o baixamento de <b>${escapeHtml(prefixo)}</b>${gbm ? ` (${escapeHtml(gbm)})` : ''}?
@@ -671,8 +780,32 @@ function abrirModalMoverReserva(prefixo){
 // ==============================================
 // INICIALIZAÇÃO
 // ==============================================
-loadData();
-setInterval(loadData, 180000);
+function startApp(){
+  hideLogin();
+
+  document.getElementById('currentUserName').textContent = USUARIO_ATUAL || '—';
+
+  const perfilEl = document.getElementById('currentUserPerfil');
+  if(perfilEl){
+    perfilEl.textContent = isAdmin() ? 'ADMIN' : 'VISUALIZAR';
+    perfilEl.className = 'badge-perfil ' + (isAdmin() ? 'admin' : 'visualizar');
+    perfilEl.style.display = 'inline-block';
+  }
+
+  loadData();
+  setInterval(loadData, 180000);
+}
+
+// ✅ Verifica se já está logado ao carregar a página
+(function init(){
+  if(sessionStorage.getItem('deman_auth') === 'ok'){
+    USUARIO_ATUAL = sessionStorage.getItem('deman_user_nome') || '';
+    PERFIL_ATUAL = sessionStorage.getItem('deman_user_perfil') || 'visualizar';
+    startApp();
+  } else {
+    showLogin();
+  }
+})();
 </script>
 </body>
 </html>
