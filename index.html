@@ -34,7 +34,6 @@
   .user-area .badge-perfil.admin{background:rgba(232,169,58,.15);color:var(--amber);border-color:var(--amber);}
   .user-area .badge-perfil.visualizar{background:rgba(147,160,176,.15);color:var(--text-dim);border-color:var(--border);}
 
-  /* LOGIN */
   .login-overlay{position:fixed;inset:0;background:rgba(16,20,26,.97);display:flex;align-items:center;justify-content:center;z-index:9999;}
   .login-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px 24px;width:340px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
   .login-box h2{font-family:'Rajdhani',sans-serif;font-size:22px;margin:0 0 4px;}
@@ -47,7 +46,6 @@
 
   .update-indicator{font-size:11px;color:var(--text-faint);text-align:right;margin-bottom:14px;}
 
-  /* RESUMO */
   .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
   .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;
     cursor:pointer;transition:border-color .15s, background .15s, transform .12s;user-select:none;}
@@ -189,24 +187,17 @@
 <script>
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTBLYK1DGYKjndJZYt2mm03aLiuwyamzc4s2dDsYY_YJpj3fh0CaptQGG1hMReJhqG/exec';
 
-// ✅ Usuários autorizados
 const USERS = {
   'deman':    { senha: 'deman2026',  nome: 'DEMAN',    perfil: 'admin'      },
   'operador': { senha: 'bamex2026',  nome: 'OPERADOR', perfil: 'visualizar' }
 };
 
-// Motivos predefinidos para baixa
 const MOTIVOS_BAIXA = ['Sinistro', 'Manutenção'];
 
-// ✅ Locais considerados "departamentais"
-const LOCAIS_DEPARTAMENTAIS = [
-  'DOP', 'DEP', 'DAT', 'DLOG', 'DGP', 'DPLAN',
-  'ASSIN', 'ASTEI', 'ASTEA', 'ASCOM', 'ASTINF',
-  'ALMOXARIFADO', 'SAT'
-];
-
+// ✅ Ambas as listas vêm da API (locais + locaisDepartamentais)
 let VIATURAS = [];
 let LOCAIS = [];
+let LOCAIS_DEPARTAMENTAIS = [];
 let activeFilter = 'todas';
 
 let USUARIO_ATUAL = '';
@@ -218,11 +209,15 @@ function normalizeStr(s){ return String(s||'').normalize('NFD').replace(/[\u0300
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
 
-// ✅ Verifica se um local é departamental
 function ehLocalDepartamental(local){
   if(!local) return false;
   const l = normalizeStr(local);
   return LOCAIS_DEPARTAMENTAIS.some(d => normalizeStr(d) === l);
+}
+
+// ✅ NOVO — retorna todos os locais (operacionais + departamentais)
+function todosOsLocais(){
+  return [...LOCAIS, ...LOCAIS_DEPARTAMENTAIS];
 }
 
 // ==============================================
@@ -306,6 +301,7 @@ async function loadData(){
     }
     VIATURAS = Array.isArray(r.viaturas) ? r.viaturas : [];
     LOCAIS = Array.isArray(r.locais) ? r.locais : [];
+    LOCAIS_DEPARTAMENTAIS = Array.isArray(r.locaisDepartamentais) ? r.locaisDepartamentais : [];
     document.getElementById('updateStatus').textContent = 'Atualizado em ' + new Date().toLocaleTimeString('pt-BR');
     render();
   }catch(err){
@@ -322,11 +318,9 @@ async function loadData(){
 function renderSummary(){
   try{
     const total = VIATURAS.length;
-    // ✅ Ativas = todas as NÃO-baixadas (ativas + reservas)
     const naoBaixadas = VIATURAS.filter(v => v.origem !== 'baixada').length;
     const reservas = VIATURAS.filter(v => v.origem === 'reserva').length;
     const baixadas = VIATURAS.filter(v => v.origem === 'baixada').length;
-    // ✅ Departamental = ativas em locais departamentais
     const departamental = VIATURAS.filter(v => v.origem === 'ativa' && ehLocalDepartamental(v.gbm)).length;
 
     const cards = [
@@ -444,7 +438,6 @@ function renderLocalGrid(){
     const container = document.getElementById('localGrid');
     const matchesQ = v => !q || normalizeStr(v.prefixo).includes(q) || normalizeStr(v.gbm).includes(q);
 
-    // ✅ BAIXADAS
     if(activeFilter === 'baixadas'){
       let baixadas = VIATURAS.filter(v => v.origem === 'baixada').filter(matchesQ);
       if(baixadas.length === 0){
@@ -456,7 +449,6 @@ function renderLocalGrid(){
       return;
     }
 
-    // ✅ RESERVAS
     if(activeFilter === 'reservas'){
       let reservas = VIATURAS.filter(v => v.origem === 'reserva').filter(matchesQ);
       if(reservas.length === 0){
@@ -468,7 +460,6 @@ function renderLocalGrid(){
       return;
     }
 
-    // ✅ DEPARTAMENTAL — só locais departamentais
     if(activeFilter === 'departamental'){
       const ativasDep = VIATURAS.filter(v => v.origem === 'ativa' && ehLocalDepartamental(v.gbm) && matchesQ(v));
       if(ativasDep.length === 0){
@@ -476,7 +467,6 @@ function renderLocalGrid(){
         return;
       }
       const porLocal = {};
-      // Ordena conforme a whitelist de departamentos
       LOCAIS_DEPARTAMENTAIS.forEach(l => porLocal[l] = []);
       ativasDep.forEach(v => {
         const key = v.gbm || '(Sem local)';
@@ -494,7 +484,6 @@ function renderLocalGrid(){
       return;
     }
 
-    // ✅ ATIVAS = todas NÃO-baixadas (ativas + reservas agrupadas por local)
     if(activeFilter === 'ativas'){
       const naoBaixadas = VIATURAS.filter(v => v.origem !== 'baixada').filter(matchesQ);
       if(naoBaixadas.length === 0){
@@ -505,13 +494,14 @@ function renderLocalGrid(){
       const reservas = naoBaixadas.filter(v => v.origem === 'reserva');
 
       const porLocal = {};
-      LOCAIS.forEach(l => porLocal[l] = []);
+      // ✅ Usa todos os locais (operacionais + departamentais)
+      todosOsLocais().forEach(l => porLocal[l] = []);
       ativas.forEach(v => {
         const key = v.gbm || '(Sem local)';
         if(!porLocal[key]) porLocal[key] = [];
         porLocal[key].push(v);
       });
-      const ordem = [...LOCAIS];
+      const ordem = [...todosOsLocais()];
       if(porLocal['(Sem local)']) ordem.push('(Sem local)');
       let html = '';
       ordem.forEach(local => {
@@ -519,7 +509,6 @@ function renderLocalGrid(){
         if(q && lista.length === 0) return;
         html += htmlLocalCard(local, lista, '');
       });
-      // Adiciona card DEMAN com as reservas
       if(reservas.length > 0){
         html += htmlLocalCard('DEMAN (Reservas)', reservas, 'reserva');
       }
@@ -528,16 +517,16 @@ function renderLocalGrid(){
       return;
     }
 
-    // ✅ TODAS (padrão) — só ativas agrupadas por local, sem DEMAN, sem baixadas
+    // TODAS (padrão)
     const ativas = VIATURAS.filter(v => v.origem === 'ativa');
     const porLocal = {};
-    LOCAIS.forEach(l => porLocal[l] = []);
+    todosOsLocais().forEach(l => porLocal[l] = []);
     ativas.filter(matchesQ).forEach(v => {
       const key = v.gbm || '(Sem local)';
       if(!porLocal[key]) porLocal[key] = [];
       porLocal[key].push(v);
     });
-    const ordem = [...LOCAIS];
+    const ordem = [...todosOsLocais()];
     if(porLocal['(Sem local)']) ordem.push('(Sem local)');
     let html = '';
     ordem.forEach(local => {
@@ -621,12 +610,23 @@ function abrirModal(titulo, camposHtml, onConfirm){
   cancel.addEventListener('click', fechar);
 }
 
+// ✅ NOVO — select com optgroups: GBMs/SGBM e Departamentos separados
 function htmlOpcoesLocais(selecionado){
-  let html = '';
-  LOCAIS.forEach(l => {
+  function opt(l){
     const sel = (selecionado && normalizeStr(l) === normalizeStr(selecionado)) ? ' selected' : '';
-    html += `<option value="${escapeAttr(l)}"${sel}>${escapeHtml(l)}</option>`;
-  });
+    return `<option value="${escapeAttr(l)}"${sel}>${escapeHtml(l)}</option>`;
+  }
+  let html = '';
+  if(LOCAIS.length > 0){
+    html += `<optgroup label="GBMs / SGBM / GBS">`;
+    html += LOCAIS.map(opt).join('');
+    html += `</optgroup>`;
+  }
+  if(LOCAIS_DEPARTAMENTAIS.length > 0){
+    html += `<optgroup label="Departamentos">`;
+    html += LOCAIS_DEPARTAMENTAIS.map(opt).join('');
+    html += `</optgroup>`;
+  }
   return html;
 }
 
