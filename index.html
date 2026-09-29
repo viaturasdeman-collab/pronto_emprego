@@ -2,10 +2,28 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>DEMAN · Gestão de Viaturas</title>
+
+<!-- ✅ iOS meta tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<meta name="color-scheme" content="dark">
+
+<!-- ✅ DNS prefetch + preconnect para acelerar Apps Script -->
+<link rel="dns-prefetch" href="https://script.google.com">
+<link rel="dns-prefetch" href="https://script.googleusercontent.com">
+<link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!-- ✅ Fonts com display=swap (não bloqueiam render no iOS) -->
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" as="style" onload="this.rel='stylesheet'">
+<noscript>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</noscript>
+
 <style>
   :root{
     --bg:#10141A; --bg-elev:#161C24; --surface:#1D2530; --surface-2:#252E3B;
@@ -14,8 +32,21 @@
     --verde:#3DDC84; --azul:#00abfb; --vermelho:#EF5350; --roxo:#B18CFF;
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
-  .wrap{max-width:1400px;margin:0 auto;padding:20px 18px 60px;}
+  html,body{
+    margin:0;padding:0;
+    background:var(--bg);color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    -webkit-text-size-adjust:100%;
+    /* ✅ iOS: evita "rubber band" na rolagem horizontal */
+    overscroll-behavior-y: contain;
+  }
+  .wrap{
+    max-width:1400px;margin:0 auto;
+    padding:20px 18px calc(60px + env(safe-area-inset-bottom)) 18px;
+    padding-left: calc(18px + env(safe-area-inset-left));
+    padding-right: calc(18px + env(safe-area-inset-right));
+  }
 
   header{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;
     padding:20px 22px;background:linear-gradient(135deg,var(--bg-elev),var(--surface));
@@ -34,11 +65,15 @@
   .user-area .badge-perfil.admin{background:rgba(232,169,58,.15);color:var(--amber);border-color:var(--amber);}
   .user-area .badge-perfil.visualizar{background:rgba(147,160,176,.15);color:var(--text-dim);border-color:var(--border);}
 
-  .login-overlay{position:fixed;inset:0;background:rgba(16,20,26,.97);display:flex;align-items:center;justify-content:center;z-index:9999;}
-  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px 24px;width:340px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  .login-overlay{position:fixed;inset:0;background:rgba(16,20,26,.97);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px 24px;width:340px;max-width:100%;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
   .login-box h2{font-family:'Rajdhani',sans-serif;font-size:22px;margin:0 0 4px;}
   .login-box p.sub{font-size:12px;color:var(--text-dim);margin:0 0 8px;}
-  .login-box input{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:14px;}
+  .login-box input{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:16px;
+    -webkit-appearance:none;  /* ✅ iOS: remove o estilo padrão feio de input */
+  }
   .login-box input:focus{outline:1px solid var(--amber);}
   .login-box .btn{width:100%;justify-content:center;padding:11px;font-size:15px;}
   .login-error{color:var(--vermelho);font-size:12px;text-align:center;display:none;}
@@ -48,7 +83,8 @@
 
   .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
   .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;
-    cursor:pointer;transition:border-color .15s, background .15s, transform .12s;user-select:none;}
+    cursor:pointer;transition:border-color .15s, background .15s, transform .12s;user-select:none;
+    -webkit-tap-highlight-color:transparent;  /* ✅ iOS: remove flash azul do tap */}
   .summary-card:hover{border-color:var(--amber);}
   .summary-card:active{transform:scale(0.98);}
   .summary-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;}
@@ -83,9 +119,18 @@
 
   .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end;margin-bottom:16px;}
   .right-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-  input[type=text]{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0;font-family:'Inter',sans-serif;}
+  input[type=text]{
+    background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;
+    padding:8px 10px;font-size:16px;min-width:0;font-family:'Inter',sans-serif;
+    -webkit-appearance:none;  /* ✅ iOS: sem borda interna feia */
+  }
   input:focus{outline:1px solid var(--amber);}
-  .btn{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;padding:9px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);white-space:nowrap;}
+  .btn{
+    font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;padding:9px 14px;border-radius:8px;
+    cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);white-space:nowrap;
+    -webkit-tap-highlight-color:transparent;  /* ✅ iOS: sem flash azul */
+    -webkit-appearance:none;  /* ✅ iOS: remove estilo nativo de botão */
+  }
   .btn:hover{border-color:var(--amber);}
   .btn.primary{background:var(--amber);color:#1a1204;border-color:var(--amber);}
   .btn.ghost{background:transparent;}
@@ -116,17 +161,48 @@
 
   .local-empty{font-size:12px;color:var(--text-faint);padding:20px;text-align:center;font-style:italic;}
 
-  .modal-overlay{position:fixed;inset:0;background:rgba(16,20,26,.85);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;}
-  .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:90vh;overflow-y:auto;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(16,20,26,.85);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));}
+  .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:90vh;overflow-y:auto;
+    -webkit-overflow-scrolling:touch;  /* ✅ iOS: rolagem suave dentro do modal */}
   .modal-box h2{font-family:'Rajdhani',sans-serif;font-size:20px;margin:0;color:var(--amber);}
   .modal-grid{display:grid;grid-template-columns:1fr;gap:10px;}
   .modal-grid label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
-  .modal-grid input, .modal-grid select{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 11px;font-size:13px;font-family:'Inter',sans-serif;}
+  .modal-grid input, .modal-grid select{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    border-radius:7px;padding:9px 11px;font-size:16px;font-family:'Inter',sans-serif;
+    -webkit-appearance:none;  /* ✅ iOS: remove estilo nativo */
+  }
   .modal-grid input:focus, .modal-grid select:focus{outline:1px solid var(--amber);}
   .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
 
   .empty{text-align:center;color:var(--text-faint);padding:40px 20px;font-size:14px;grid-column:1/-1;}
   footer{text-align:center;color:var(--text-faint);font-size:11px;margin-top:40px;}
+
+  /* ============ SKELETON / LOADING ============ */
+  .skel{
+    background:linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 100%);
+    background-size:200% 100%;
+    animation:shimmer 1.2s linear infinite;
+    border-radius:8px;
+  }
+  @keyframes shimmer{ from { background-position: 200% 0 } to { background-position: -200% 0 } }
+
+  /* ✅ iOS: reduz animações se o usuário preferir */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ✅ Ajuste fino para telas pequenas (iOS SE / iPhone mini) */
+  @media (max-width: 560px){
+    h1{ font-size: 20px; }
+    .local-grid{ grid-template-columns: 1fr; }
+    .summary{ grid-template-columns: repeat(2, 1fr); }
+    .summary-card .value{ font-size: 26px; }
+  }
 </style>
 </head>
 <body>
@@ -135,7 +211,7 @@
   <div class="login-box">
     <h2>DEMAN · Acesso</h2>
     <p class="sub">Entre com suas credenciais para continuar.</p>
-    <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username">
+    <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
     <input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password">
     <p id="loginError" class="login-error">Usuário ou senha inválidos.</p>
     <button class="btn primary" id="loginBtn">Entrar</button>
@@ -174,7 +250,7 @@
 
   <div class="toolbar">
     <div class="right-tools">
-      <input type="text" id="search" placeholder="Buscar prefixo ou local">
+      <input type="text" id="search" placeholder="Buscar prefixo ou local" autocapitalize="characters" autocorrect="off" spellcheck="false">
       <button class="btn ghost" id="clearFilterBtn" style="display:none;">Limpar filtro</button>
     </div>
   </div>
@@ -194,7 +270,9 @@ const USERS = {
 
 const MOTIVOS_BAIXA = ['Sinistro', 'Manutenção'];
 
-// ✅ Ambas as listas vêm da API (locais + locaisDepartamentais)
+const CACHE_KEY = 'deman_cache_viaturas_v1';
+const CACHE_META_KEY = 'deman_cache_viaturas_meta';
+
 let VIATURAS = [];
 let LOCAIS = [];
 let LOCAIS_DEPARTAMENTAIS = [];
@@ -215,7 +293,6 @@ function ehLocalDepartamental(local){
   return LOCAIS_DEPARTAMENTAIS.some(d => normalizeStr(d) === l);
 }
 
-// ✅ NOVO — retorna todos os locais (operacionais + departamentais)
 function todosOsLocais(){
   return [...LOCAIS, ...LOCAIS_DEPARTAMENTAIS];
 }
@@ -248,6 +325,8 @@ function handleLogout(){
   sessionStorage.removeItem('deman_auth');
   sessionStorage.removeItem('deman_user_nome');
   sessionStorage.removeItem('deman_user_perfil');
+  // ✅ Limpa o cache de viaturas ao sair
+  try{ sessionStorage.removeItem(CACHE_KEY); sessionStorage.removeItem(CACHE_META_KEY); }catch(e){}
   location.reload();
 }
 
@@ -257,18 +336,21 @@ document.getElementById('loginUser').addEventListener('keydown', e => { if(e.key
 document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
 // ==============================================
-// API
+// API — com timeout reduzido para iOS (25s)
 // ==============================================
 async function apiCall(action, payload){
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 45000);
+  // ✅ Timeout reduzido (iOS Safari corta em ~30s)
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
   try{
     console.log('📤 Enviando:', action, payload || {});
     const r = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(Object.assign({ action, usuario: USUARIO_ATUAL }, payload || {})),
-      signal: controller.signal
+      signal: controller.signal,
+      // ✅ iOS: força revalidação para evitar cache agressivo
+      cache: 'no-store'
     });
     clearTimeout(timeoutId);
     console.log('📥 Status HTTP:', r.status);
@@ -281,10 +363,45 @@ async function apiCall(action, payload){
     clearTimeout(timeoutId);
     console.error('❌ Erro fetch:', err);
     if(err.name === 'AbortError'){
-      return { ok:false, error:'Tempo esgotado (45s). Tente novamente.' };
+      return { ok:false, error:'A rede está lenta. Tente novamente em alguns segundos.' };
     }
     return { ok:false, error:'Erro de rede: ' + err.message };
   }
+}
+
+// ==============================================
+// CACHE LOCAL — melhora muito a UX no iOS
+// ==============================================
+function salvarCache(){
+  try{
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+      viaturas: VIATURAS,
+      locais: LOCAIS,
+      locaisDepartamentais: LOCAIS_DEPARTAMENTAIS
+    }));
+    sessionStorage.setItem(CACHE_META_KEY, String(Date.now()));
+  }catch(e){ console.warn('Não foi possível salvar cache:', e); }
+}
+
+function carregarCache(){
+  try{
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if(!raw) return false;
+    const dados = JSON.parse(raw);
+    if(!dados || !Array.isArray(dados.viaturas)) return false;
+    VIATURAS = dados.viaturas;
+    LOCAIS = Array.isArray(dados.locais) ? dados.locais : [];
+    LOCAIS_DEPARTAMENTAIS = Array.isArray(dados.locaisDepartamentais) ? dados.locaisDepartamentais : [];
+    return true;
+  }catch(e){ return false; }
+}
+
+function idadeCache(){
+  try{
+    const t = parseInt(sessionStorage.getItem(CACHE_META_KEY) || '0', 10);
+    if(!t) return Infinity;
+    return Math.floor((Date.now() - t) / 1000); // segundos
+  }catch(e){ return Infinity; }
 }
 
 // ==============================================
@@ -292,23 +409,23 @@ async function apiCall(action, payload){
 // ==============================================
 async function loadData(){
   try{
+    document.getElementById('updateStatus').textContent = 'Atualizando...';
     const r = await apiCall('listarViaturas');
     if(!r.ok){
       document.getElementById('updateStatus').textContent = 'Falha: ' + (r.error || 'desconhecido');
-      VIATURAS = [];
-      render();
+      if(VIATURAS.length === 0){ render(); }
       return;
     }
     VIATURAS = Array.isArray(r.viaturas) ? r.viaturas : [];
     LOCAIS = Array.isArray(r.locais) ? r.locais : [];
     LOCAIS_DEPARTAMENTAIS = Array.isArray(r.locaisDepartamentais) ? r.locaisDepartamentais : [];
+    salvarCache();
     document.getElementById('updateStatus').textContent = 'Atualizado em ' + new Date().toLocaleTimeString('pt-BR');
     render();
   }catch(err){
     console.error('Erro em loadData:', err);
     document.getElementById('updateStatus').textContent = 'Erro: ' + err.message;
-    VIATURAS = [];
-    render();
+    if(VIATURAS.length === 0){ render(); }
   }
 }
 
@@ -494,7 +611,6 @@ function renderLocalGrid(){
       const reservas = naoBaixadas.filter(v => v.origem === 'reserva');
 
       const porLocal = {};
-      // ✅ Usa todos os locais (operacionais + departamentais)
       todosOsLocais().forEach(l => porLocal[l] = []);
       ativas.forEach(v => {
         const key = v.gbm || '(Sem local)';
@@ -570,7 +686,12 @@ function render(){
   renderLocalGrid();
 }
 
-document.getElementById('search').addEventListener('input', render);
+// ✅ Busca com debounce para não travar no iOS
+let searchDebounce = null;
+document.getElementById('search').addEventListener('input', () => {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(render, 180);
+});
 
 // ==============================================
 // MODAL GENÉRICO
@@ -610,7 +731,6 @@ function abrirModal(titulo, camposHtml, onConfirm){
   cancel.addEventListener('click', fechar);
 }
 
-// ✅ NOVO — select com optgroups: GBMs/SGBM e Departamentos separados
 function htmlOpcoesLocais(selecionado){
   function opt(l){
     const sel = (selecionado && normalizeStr(l) === normalizeStr(selecionado)) ? ' selected' : '';
@@ -795,7 +915,22 @@ function startApp(){
     perfilEl.className = 'badge-perfil ' + (isAdmin() ? 'admin' : 'visualizar');
     perfilEl.style.display = 'inline-block';
   }
+
+  // ✅ Mostra dados do cache IMEDIATAMENTE (se existir)
+  if(carregarCache()){
+    render();
+    const idade = idadeCache();
+    if(idade < 60){
+      document.getElementById('updateStatus').textContent = 'Dados em cache (' + idade + 's atrás)';
+    } else {
+      document.getElementById('updateStatus').textContent = 'Atualizando...';
+    }
+  }
+
+  // Busca dados frescos em paralelo
   loadData();
+
+  // Polling a cada 3 min
   setInterval(loadData, 180000);
 }
 
