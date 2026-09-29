@@ -286,10 +286,6 @@ function ehDiretoria(local){
   return LOCAIS_DIRETORIAS.some(d => normalizeStr(d) === l);
 }
 
-function todosOsLocais(){
-  return [...LOCAIS, ...LOCAIS_DIRETORIAS];
-}
-
 // ==============================================
 // AUTENTICAÇÃO
 // ==============================================
@@ -408,7 +404,6 @@ async function loadData(){
     }
     VIATURAS = Array.isArray(r.viaturas) ? r.viaturas : [];
     LOCAIS = Array.isArray(r.locais) ? r.locais : [];
-    // ✅ Backend ainda retorna "locaisDepartamentais" — mantém o mapeamento
     LOCAIS_DIRETORIAS = Array.isArray(r.locaisDepartamentais) ? r.locaisDepartamentais : [];
     salvarCache();
     document.getElementById('updateStatus').textContent = 'Atualizado em ' + new Date().toLocaleTimeString('pt-BR');
@@ -539,6 +534,7 @@ function htmlLocalCard(nome, viaturas, tipo){
 
 // ==============================================
 // GRID PRINCIPAL
+// ✅ Viaturas em diretorias só aparecem no filtro "Diretorias"
 // ==============================================
 function renderLocalGrid(){
   try{
@@ -568,6 +564,7 @@ function renderLocalGrid(){
       return;
     }
 
+    // ✅ FILTRO "DIRETORIAS" — só aqui aparecem as viaturas em diretorias
     if(activeFilter === 'diretorias'){
       const ativasDir = VIATURAS.filter(v => v.origem === 'ativa' && ehDiretoria(v.gbm) && matchesQ(v));
       if(ativasDir.length === 0){
@@ -592,23 +589,25 @@ function renderLocalGrid(){
       return;
     }
 
+    // ✅ FILTRO "ATIVAS" — apenas locais operacionais (sem diretorias)
     if(activeFilter === 'ativas'){
       const naoBaixadas = VIATURAS.filter(v => v.origem !== 'baixada').filter(matchesQ);
       if(naoBaixadas.length === 0){
         container.innerHTML = '<div class="empty">Nenhuma viatura ativa.</div>';
         return;
       }
-      const ativas = naoBaixadas.filter(v => v.origem === 'ativa');
+      // ✅ Remove viaturas em diretorias desse filtro
+      const ativas = naoBaixadas.filter(v => v.origem === 'ativa' && !ehDiretoria(v.gbm));
       const reservas = naoBaixadas.filter(v => v.origem === 'reserva');
 
       const porLocal = {};
-      todosOsLocais().forEach(l => porLocal[l] = []);
+      LOCAIS.forEach(l => porLocal[l] = []);  // ← apenas locais operacionais
       ativas.forEach(v => {
         const key = v.gbm || '(Sem local)';
         if(!porLocal[key]) porLocal[key] = [];
         porLocal[key].push(v);
       });
-      const ordem = [...todosOsLocais()];
+      const ordem = [...LOCAIS];
       if(porLocal['(Sem local)']) ordem.push('(Sem local)');
       let html = '';
       ordem.forEach(local => {
@@ -624,16 +623,16 @@ function renderLocalGrid(){
       return;
     }
 
-    // TODAS (padrão)
-    const ativas = VIATURAS.filter(v => v.origem === 'ativa');
+    // ✅ TODAS (padrão) — apenas locais operacionais (sem diretorias)
+    const ativas = VIATURAS.filter(v => v.origem === 'ativa' && !ehDiretoria(v.gbm));
     const porLocal = {};
-    todosOsLocais().forEach(l => porLocal[l] = []);
+    LOCAIS.forEach(l => porLocal[l] = []);  // ← apenas locais operacionais
     ativas.filter(matchesQ).forEach(v => {
       const key = v.gbm || '(Sem local)';
       if(!porLocal[key]) porLocal[key] = [];
       porLocal[key].push(v);
     });
-    const ordem = [...todosOsLocais()];
+    const ordem = [...LOCAIS];
     if(porLocal['(Sem local)']) ordem.push('(Sem local)');
     let html = '';
     ordem.forEach(local => {
